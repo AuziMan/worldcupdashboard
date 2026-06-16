@@ -1,117 +1,104 @@
 # FIFA World Cup 2026 Dashboard
 
-A live match dashboard for the 2026 FIFA World Cup. Shows upcoming fixtures, live scores, recent results, and group stage standings — refreshed automatically every 3 hours between 9 AM and 9 PM.
+A live match dashboard for the 2026 FIFA World Cup. Shows upcoming fixtures, scores, recent results, and group stage standings.
 
-Built with a Flask backend and a React frontend.
+It's a **fully static site** hosted for free on **GitHub Pages**. A scheduled GitHub Action fetches fresh data from [football-data.org](https://www.football-data.org/) every 30 minutes and republishes the site. There is no running server — the API key lives in a GitHub Secret and never reaches the browser.
+
+> Live demo: `https://peter-mxtoolbox.github.io/worldcupdashboard/`
 
 ---
 
-## Prerequisites
+## How it works
+
+```
+┌────────────────────┐    every 30 min (cron)    ┌──────────────────────┐
+│  GitHub Actions     │ ────────────────────────▶ │  football-data.org   │
+│  scripts/fetch_     │   X-Auth-Token (secret)   │  API                 │
+│  data.py            │ ◀──────────────────────── │                      │
+└─────────┬──────────┘        matches/standings   └──────────────────────┘
+          │ writes JSON
+          ▼
+   frontend/public/data/*.json  ──►  vite build  ──►  GitHub Pages (static)
+                                                            │
+                                                            ▼
+                                          Browser fetches static JSON only
+```
+
+- **`scripts/fetch_data.py`** — calls football-data.org and writes `matches.json`, `standings.json`, `status.json` into `frontend/public/data/`. Runs in CI; the API key comes from the `FOOTBALL_DATA_API_KEY` secret.
+- **`.github/workflows/deploy.yml`** — on a 30-minute schedule (and on every push / manual trigger): fetch data → `npm run build` → deploy to Pages.
+- **Frontend** — a React/Vite app that fetches the static JSON files (no `/api` backend).
+
+---
+
+## One-time GitHub setup
+
+1. **Add the API key as a secret.** Get a free key from [football-data.org](https://www.football-data.org/client/register), then in the repo: **Settings → Secrets and variables → Actions → New repository secret**
+   - Name: `FOOTBALL_DATA_API_KEY`
+   - Value: your key
+2. **Enable Pages from Actions.** **Settings → Pages → Build and deployment → Source: GitHub Actions**.
+3. Push to `main` (or run the **Build and deploy to GitHub Pages** workflow manually from the Actions tab). The site goes live at `https://<user>.github.io/<repo>/`.
+
+To change how often data refreshes, edit the `cron` in `.github/workflows/deploy.yml`.
+
+---
+
+## Local development
+
+### Prerequisites
 
 - Python 3.9+
 - Node.js 18+
-- A free API key from [football-data.org](https://www.football-data.org/client/register) (takes ~30 seconds to sign up)
+- A free API key from [football-data.org](https://www.football-data.org/client/register)
 
----
-
-## Setup
-
-### 1. Clone the repo
+### Setup
 
 ```bash
-git clone https://github.com/AuziMan/worldcupdashboard
-cd WorldCupDashboard
+# 1. API key for local fetches
+cp scripts/.env.example scripts/.env
+#    then edit scripts/.env and paste your key
+
+# 2. Python deps for the fetch script
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r scripts/requirements.txt
+
+# 3. Frontend deps
+cd frontend && npm install && cd ..
 ```
 
-### 2. Add your API key
-
-```bash
-cp backend/.env.example backend/.env
-```
-
-Open `backend/.env` and replace `your_api_key_here` with your key from football-data.org:
-
-```
-FOOTBALL_DATA_API_KEY=your_api_key_here
-```
-
-### 3. Install backend dependencies
-
-```bash
-cd backend
-python3 -m venv venv
-source venv/bin/activate   # Windows: venv\Scripts\activate
-pip install -r requirements.txt
-cd ..
-```
-
-### 4. Install frontend dependencies
-
-```bash
-cd frontend
-npm install
-cd ..
-```
-
----
-
-## Running the app
-
-From the project root:
+### Run
 
 ```bash
 ./start.sh
 ```
 
-This clears any existing processes on the required ports, starts the Flask backend on `:5001` and the React frontend on `:5173`, then opens the dashboard at:
-
-```
-http://localhost:5173
-```
-
-Press `Ctrl+C` to stop both servers.
+This fetches the latest data into `frontend/public/data/` and starts the Vite dev server at <http://localhost:5173>. Re-run it (or just `python3 scripts/fetch_data.py`) to pull fresh data.
 
 ---
 
 ## Project structure
 
 ```
-WorldCupDashboard/
-├── backend/
-│   ├── app.py              # Flask API with 3-hour cache
+worldcupdashboard/
+├── .github/workflows/
+│   └── deploy.yml          # Scheduled fetch + build + deploy to Pages
+├── scripts/
+│   ├── fetch_data.py       # Fetches API data -> static JSON
 │   ├── requirements.txt
-│   ├── .env                # Your API key (never committed)
-│   └── .env.example        # Template — copy this to .env
+│   └── .env.example        # Copy to scripts/.env for local runs
 ├── frontend/
+│   ├── public/data/        # Generated JSON (gitignored)
 │   ├── src/
-│   │   ├── App.jsx         # Root component and tab layout
-│   │   ├── components/
-│   │   │   ├── Header.jsx       # Title bar with refresh button
-│   │   │   ├── MatchCard.jsx    # Individual match tile
-│   │   │   ├── MatchSection.jsx # Live / upcoming / results layout
-│   │   │   └── Standings.jsx    # Group stage tables
+│   │   ├── App.jsx
+│   │   ├── components/      # Header, MatchCard, MatchSection, Standings
 │   │   └── hooks/
-│   │       └── useWorldCupData.js  # Data fetching and auto-refresh
-│   └── vite.config.js      # Proxies /api/* to Flask backend
-└── start.sh                # One-command startup script
+│   │       └── useWorldCupData.js  # Fetches static JSON, polls for updates
+│   └── vite.config.js      # base path for project Pages
+└── start.sh                # Local dev: fetch data + run Vite
 ```
 
 ---
 
-## API endpoints
+## Notes & limitations
 
-| Endpoint | Description |
-|---|---|
-| `GET /api/matches` | All tournament matches |
-| `GET /api/standings` | Group stage standings |
-| `GET /api/teams` | Team info and crests |
-| `GET /api/status` | Cache freshness info |
-| `POST /api/refresh` | Force-clear the cache |
-
-Data is cached for 3 hours. The frontend auto-refreshes on the same interval, but only between 9 AM and 9 PM.
-
----
-
-## Data source
-
-[football-data.org](https://www.football-data.org) — free tier, no credit card required.
+- **Freshness:** data is as recent as the last scheduled run (~30 min; GitHub may delay scheduled jobs under load). The football-data.org free tier does not include true real-time in-play data.
+- **Cost:** GitHub Pages and Actions are free for public repositories.

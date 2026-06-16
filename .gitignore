@@ -1,13 +1,18 @@
 # Python
-backend/venv/
-backend/__pycache__/
-backend/*.pyc
-backend/.env
+scripts/__pycache__/
+scripts/*.pyc
+scripts/.env
+.venv/
+venv/
 
 # Node
 frontend/node_modules/
 frontend/dist/
 frontend/dist-ssr/
+
+# Generated data (fetched at build time; not committed)
+frontend/public/data/*
+!frontend/public/data/.gitkeep
 
 # Misc
 .DS_Store

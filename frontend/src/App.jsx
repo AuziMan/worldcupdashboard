@@ -31,8 +31,8 @@ export default function App() {
         {error && (
           <div className="error-banner">
             <strong>Could not load data:</strong> {error}
-            {error.includes('401') && (
-              <p>Check that your <code>FOOTBALL_DATA_API_KEY</code> is set in <code>backend/.env</code>.</p>
+            {error.includes('404') && (
+              <p>Data files haven’t been generated yet. Run <code>scripts/fetch_data.py</code> (or wait for the next scheduled deploy).</p>
             )}
           </div>
         )}
@@ -54,7 +54,7 @@ export default function App() {
       </main>
 
       <footer className="footer">
-        <p>Data provided by football-data.org · Refreshes every 3 hours (9 AM – 9 PM)</p>
+        <p>Data provided by football-data.org · Refreshed automatically every 30 minutes</p>
       </footer>
     </div>
   )
