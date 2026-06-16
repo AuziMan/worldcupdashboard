@@ -19,7 +19,7 @@ Built with a Flask backend and a React frontend.
 ### 1. Clone the repo
 
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/AuziMan/worldcupdashboard
 cd WorldCupDashboard
 ```
 
