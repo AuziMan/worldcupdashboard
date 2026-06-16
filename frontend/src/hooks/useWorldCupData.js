@@ -9,9 +9,11 @@ function isActiveHour() {
   return hour >= ACTIVE_START_HOUR && hour < ACTIVE_END_HOUR
 }
 
-async function fetchJSON(url) {
-  const res = await fetch(url)
-  if (!res.ok) throw new Error(`${url} returned ${res.status}`)
+const API_BASE = import.meta.env.VITE_API_URL || ''
+
+async function fetchJSON(path) {
+  const res = await fetch(`${API_BASE}${path}`)
+  if (!res.ok) throw new Error(`${path} returned ${res.status}`)
   return res.json()
 }
 
