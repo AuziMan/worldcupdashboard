@@ -25,8 +25,18 @@ function TeamSide({ team, score }) {
   )
 }
 
+function MatchMinute({ status, minute }) {
+  if (status === 'PAUSED') {
+    return <span className="match-minute match-minute--ht">HT</span>
+  }
+  if (status === 'IN_PLAY' && minute != null) {
+    return <span className="match-minute">{minute}'</span>
+  }
+  return null
+}
+
 export default function MatchCard({ match }) {
-  const { homeTeam, awayTeam, score, status, utcDate, stage, group } = match
+  const { homeTeam, awayTeam, score, status, utcDate, stage, group, minute } = match
 
   const kickoff = new Date(utcDate)
   const isLive = status === 'IN_PLAY' || status === 'PAUSED'
@@ -42,6 +52,7 @@ export default function MatchCard({ match }) {
     <div className={`match-card ${isLive ? 'match-card--live' : ''} ${isFinished ? 'match-card--finished' : ''}`}>
       <div className="match-meta">
         <span className={`match-status match-status--${status?.toLowerCase()}`}>{statusLabel}</span>
+        {isLive && <MatchMinute status={status} minute={minute} />}
         {group && <span className="match-group">{group.replace('GROUP_', 'Group ')}</span>}
       </div>
 

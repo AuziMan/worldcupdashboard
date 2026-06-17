@@ -233,6 +233,21 @@
   color: var(--accent);
 }
 
+.match-minute {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--live);
+  background: rgba(63, 185, 80, 0.15);
+  padding: 2px 7px;
+  border-radius: 4px;
+  letter-spacing: 0.02em;
+}
+
+.match-minute--ht {
+  color: var(--accent);
+  background: rgba(245, 166, 35, 0.15);
+}
+
 .match-group {
   font-size: 0.72rem;
   color: var(--text-secondary);
