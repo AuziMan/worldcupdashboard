@@ -54,7 +54,7 @@ export default function App() {
       </main>
 
       <footer className="footer">
-        <p>Data provided by football-data.org · Refreshes every 3 hours (9 AM – 9 PM)</p>
+        <p>Data provided by football-data.org · Refreshes every 15 minutes (9 AM – 9 PM)</p>
       </footer>
     </div>
   )
