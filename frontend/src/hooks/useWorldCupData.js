@@ -1,12 +1,19 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 
-const REFRESH_INTERVAL = 5 * 60 * 1000 // 15 minutes
-const ACTIVE_START_HOUR = 9   // 9 AM
-const ACTIVE_END_HOUR = 21    // 9 PM
+const INTERVAL_DEFAULT = 60 * 1000  // 60 seconds
+const INTERVAL_LIVE = 60 * 1000    // 60 seconds during live games
+const ACTIVE_START_HOUR = 9
+const ACTIVE_END_HOUR = 21
 
 function isActiveHour() {
   const hour = new Date().getHours()
   return hour >= ACTIVE_START_HOUR && hour < ACTIVE_END_HOUR
+}
+
+function hasLiveMatches(matchData) {
+  return matchData?.matches?.some(
+    m => m.status === 'IN_PLAY' || m.status === 'PAUSED'
+  ) ?? false
 }
 
 const API_BASE = import.meta.env.VITE_API_URL || ''
@@ -24,6 +31,8 @@ export function useWorldCupData() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [lastFetched, setLastFetched] = useState(null)
+  const [isLiveMode, setIsLiveMode] = useState(false)
+  const intervalRef = useRef(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -38,6 +47,7 @@ export function useWorldCupData() {
       setStandings(standingData)
       setStatus(statusData)
       setLastFetched(new Date())
+      setIsLiveMode(hasLiveMatches(matchData))
     } catch (err) {
       setError(err.message)
     } finally {
@@ -45,17 +55,19 @@ export function useWorldCupData() {
     }
   }, [])
 
+  // Restart interval whenever live mode changes so cadence updates immediately
+  useEffect(() => {
+    if (intervalRef.current) clearInterval(intervalRef.current)
+    const interval = isLiveMode ? INTERVAL_LIVE : INTERVAL_DEFAULT
+    intervalRef.current = setInterval(() => {
+      if (isActiveHour()) load()
+    }, interval)
+    return () => clearInterval(intervalRef.current)
+  }, [isLiveMode, load])
+
   useEffect(() => {
     load()
-
-    const interval = setInterval(() => {
-      if (isActiveHour()) {
-        load()
-      }
-    }, REFRESH_INTERVAL)
-
-    return () => clearInterval(interval)
   }, [load])
 
-  return { matches, standings, status, loading, error, lastFetched, refresh: load }
+  return { matches, standings, status, loading, error, lastFetched, isLiveMode, refresh: load }
 }

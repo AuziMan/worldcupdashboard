@@ -9,7 +9,7 @@ const TABS = ['Matches', 'Standings']
 
 export default function App() {
   const [tab, setTab] = useState('Matches')
-  const { matches, standings, loading, error, lastFetched, refresh } = useWorldCupData()
+  const { matches, standings, loading, error, lastFetched, isLiveMode, refresh } = useWorldCupData()
 
   return (
     <div className="app">
@@ -54,7 +54,10 @@ export default function App() {
       </main>
 
       <footer className="footer">
-        <p>Data provided by football-data.org · Refreshes every 15 minutes (9 AM – 9 PM)</p>
+        <p>
+          Data provided by football-data.org ·{' '}
+          Refreshes every minute (9 AM – 9 PM){isLiveMode ? ' · Live mode active' : ''}
+        </p>
       </footer>
     </div>
   )
