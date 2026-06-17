@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 
-const REFRESH_INTERVAL = 15 * 60 * 1000 // 15 minutes
+const REFRESH_INTERVAL = 5 * 60 * 1000 // 15 minutes
 const ACTIVE_START_HOUR = 9   // 9 AM
 const ACTIVE_END_HOUR = 21    // 9 PM
 
