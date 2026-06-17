@@ -13,7 +13,7 @@ CORS(app)
 API_KEY = os.getenv("FOOTBALL_DATA_API_KEY", "")
 BASE_URL = "https://api.football-data.org/v4"
 COMPETITION = "WC"
-CACHE_TTL = timedelta(minutes=15)
+CACHE_TTL = timedelta(minutes=5)
 
 _cache: dict = {}
 
