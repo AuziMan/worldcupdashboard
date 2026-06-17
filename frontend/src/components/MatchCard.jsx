@@ -35,7 +35,7 @@ function MatchMinute({ status, minute }) {
   return null
 }
 
-export default function MatchCard({ match }) {
+export default function MatchCard({ match, onClick }) {
   const { homeTeam, awayTeam, score, status, utcDate, stage, group, minute } = match
 
   const kickoff = new Date(utcDate)
@@ -49,7 +49,13 @@ export default function MatchCard({ match }) {
   const statusLabel = STATUS_LABELS[status] || status
 
   return (
-    <div className={`match-card ${isLive ? 'match-card--live' : ''} ${isFinished ? 'match-card--finished' : ''}`}>
+    <div
+      className={`match-card ${isLive ? 'match-card--live' : ''} ${isFinished ? 'match-card--finished' : ''}`}
+      onClick={onClick}
+      role="button"
+      tabIndex={0}
+      onKeyDown={e => e.key === 'Enter' && onClick?.()}
+    >
       <div className="match-meta">
         <span className={`match-status match-status--${status?.toLowerCase()}`}>{statusLabel}</span>
         {isLive && <MatchMinute status={status} minute={minute} />}

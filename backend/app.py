@@ -66,6 +66,12 @@ def teams():
     return jsonify(data)
 
 
+@app.route("/api/teams/<int:team_id>")
+def team_detail(team_id):
+    data = cached(f"team_{team_id}", lambda: _get(f"/teams/{team_id}"))
+    return jsonify(data)
+
+
 @app.route("/api/status")
 def status():
     now = datetime.now(timezone.utc)

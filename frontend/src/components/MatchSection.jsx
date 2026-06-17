@@ -12,7 +12,7 @@ function groupByDate(matches) {
   return groups
 }
 
-export default function MatchSection({ matches }) {
+export default function MatchSection({ matches, onSelectMatch }) {
   if (!matches?.matches?.length) {
     return <p className="empty-state">No matches found.</p>
   }
@@ -21,9 +21,10 @@ export default function MatchSection({ matches }) {
   const now = new Date()
 
   const live = all.filter(m => m.status === 'IN_PLAY' || m.status === 'PAUSED')
+  const twoHoursAgo = new Date(now - 2 * 60 * 60 * 1000)
   const upcoming = all
     .filter(m => m.status === 'SCHEDULED' || m.status === 'TIMED')
-    .filter(m => new Date(m.utcDate) >= now)
+    .filter(m => new Date(m.utcDate) >= twoHoursAgo)
     .slice(0, 12)
   const recent = all
     .filter(m => m.status === 'FINISHED')
@@ -38,7 +39,7 @@ export default function MatchSection({ matches }) {
         <section>
           <h2 className="section-title section-title--live">Live Now</h2>
           <div className="match-grid">
-            {live.map(m => <MatchCard key={m.id} match={m} />)}
+            {live.map(m => <MatchCard key={m.id} match={m} onClick={() => onSelectMatch(m)} />)}
           </div>
         </section>
       )}
@@ -50,7 +51,7 @@ export default function MatchSection({ matches }) {
             <div key={date}>
               <h3 className="date-divider">{date}</h3>
               <div className="match-grid">
-                {dayMatches.map(m => <MatchCard key={m.id} match={m} />)}
+                {dayMatches.map(m => <MatchCard key={m.id} match={m} onClick={() => onSelectMatch(m)} />)}
               </div>
             </div>
           ))}
@@ -61,7 +62,7 @@ export default function MatchSection({ matches }) {
         <section>
           <h2 className="section-title">Recent Results</h2>
           <div className="match-grid">
-            {recent.map(m => <MatchCard key={m.id} match={m} />)}
+            {recent.map(m => <MatchCard key={m.id} match={m} onClick={() => onSelectMatch(m)} />)}
           </div>
         </section>
       )}

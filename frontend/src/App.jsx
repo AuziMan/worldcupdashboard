@@ -3,12 +3,14 @@ import { useWorldCupData } from './hooks/useWorldCupData'
 import Header from './components/Header'
 import MatchSection from './components/MatchSection'
 import Standings from './components/Standings'
+import MatchModal from './components/MatchModal'
 import './App.css'
 
 const TABS = ['Matches', 'Standings']
 
 export default function App() {
   const [tab, setTab] = useState('Matches')
+  const [selectedMatch, setSelectedMatch] = useState(null)
   const { matches, standings, loading, error, lastFetched, isLiveMode, refresh } = useWorldCupData()
 
   return (
@@ -45,7 +47,7 @@ export default function App() {
         )}
 
         {!loading && !error && tab === 'Matches' && (
-          <MatchSection matches={matches} />
+          <MatchSection matches={matches} onSelectMatch={setSelectedMatch} />
         )}
 
         {!loading && !error && tab === 'Standings' && (
@@ -59,6 +61,10 @@ export default function App() {
           Refreshes every minute (9 AM – 9 PM){isLiveMode ? ' · Live mode active' : ''}
         </p>
       </footer>
+
+      {selectedMatch && (
+        <MatchModal match={selectedMatch} onClose={() => setSelectedMatch(null)} />
+      )}
     </div>
   )
 }
