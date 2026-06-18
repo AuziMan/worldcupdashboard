@@ -1,5 +1,7 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_cors import CORS
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 import requests
 import os
 from datetime import datetime, timedelta, timezone
@@ -8,9 +10,23 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app)
+
+ALLOWED_ORIGINS = [
+    "https://austintdriver.github.io",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+]
+CORS(app, origins=ALLOWED_ORIGINS)
+
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=["60 per minute"],
+    storage_uri="memory://",
+)
 
 API_KEY = os.getenv("FOOTBALL_DATA_API_KEY", "")
+REFRESH_SECRET = os.getenv("REFRESH_SECRET", "")
 BASE_URL = "https://api.football-data.org/v4"
 COMPETITION = "WC"
 CACHE_TTL_DEFAULT = timedelta(seconds=60)
@@ -46,6 +62,14 @@ def cached(key: str, fetch):
     data = fetch()
     _cache[key] = {"data": data, "ts": now}
     return data
+
+
+@app.after_request
+def set_security_headers(response):
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Cache-Control"] = "no-store"
+    return response
 
 
 @app.route("/api/matches")
@@ -91,7 +115,11 @@ def status():
 
 
 @app.route("/api/refresh", methods=["POST"])
+@limiter.limit("5 per minute")
 def refresh():
+    token = request.headers.get("X-Refresh-Token", "")
+    if not REFRESH_SECRET or token != REFRESH_SECRET:
+        return jsonify({"error": "Unauthorized"}), 401
     _cache.clear()
     return jsonify({"message": "Cache cleared. Next request will fetch fresh data."})
 
