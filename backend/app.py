@@ -12,7 +12,7 @@ load_dotenv()
 app = Flask(__name__)
 
 ALLOWED_ORIGINS = [
-    "https://austintdriver.github.io",
+    "https://auziman.github.io",
     "http://localhost:5173",
     "http://127.0.0.1:5173",
 ]
