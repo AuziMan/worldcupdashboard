@@ -4,6 +4,7 @@ import Header from './components/Header'
 import MatchSection from './components/MatchSection'
 import Standings from './components/Standings'
 import MatchModal from './components/MatchModal'
+import AdminPanel from './components/AdminPanel'
 import './App.css'
 
 const TABS = ['Matches', 'Standings']
@@ -12,14 +13,17 @@ const API_BASE = import.meta.env.VITE_API_URL || ''
 export default function App() {
   const [tab, setTab] = useState('Matches')
   const [selectedMatch, setSelectedMatch] = useState(null)
+  const isAdmin = window.location.hash === '#admin'
 
   useEffect(() => {
-    if (!sessionStorage.getItem('_wcd_visited')) {
+    if (!isAdmin && !sessionStorage.getItem('_wcd_visited')) {
       fetch(`${API_BASE}/api/analytics/visit`, { method: 'POST' }).catch(() => {})
       sessionStorage.setItem('_wcd_visited', '1')
     }
-  }, [])
+  }, [isAdmin])
   const { matches, standings, loading, error, lastFetched, isLiveMode, refresh } = useWorldCupData()
+
+  if (isAdmin) return <AdminPanel />
 
   return (
     <div className="app">
