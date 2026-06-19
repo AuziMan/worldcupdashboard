@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useWorldCupData } from './hooks/useWorldCupData'
 import Header from './components/Header'
 import MatchSection from './components/MatchSection'
@@ -7,10 +7,18 @@ import MatchModal from './components/MatchModal'
 import './App.css'
 
 const TABS = ['Matches', 'Standings']
+const API_BASE = import.meta.env.VITE_API_URL || ''
 
 export default function App() {
   const [tab, setTab] = useState('Matches')
   const [selectedMatch, setSelectedMatch] = useState(null)
+
+  useEffect(() => {
+    if (!sessionStorage.getItem('_wcd_visited')) {
+      fetch(`${API_BASE}/api/analytics/visit`, { method: 'POST' }).catch(() => {})
+      sessionStorage.setItem('_wcd_visited', '1')
+    }
+  }, [])
   const { matches, standings, loading, error, lastFetched, isLiveMode, refresh } = useWorldCupData()
 
   return (

@@ -2,6 +2,8 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+import hashlib
+import json
 import requests
 import os
 from datetime import datetime, timedelta, timezone
@@ -33,6 +35,30 @@ CACHE_TTL_DEFAULT = timedelta(seconds=60)
 CACHE_TTL_LIVE = timedelta(seconds=60)
 
 _cache: dict = {}
+
+ANALYTICS_FILE = os.path.join(os.path.dirname(__file__), "analytics.json")
+
+
+def _load_analytics() -> dict:
+    try:
+        with open(ANALYTICS_FILE) as f:
+            data = json.load(f)
+            data.setdefault("total_visits", 0)
+            data.setdefault("daily", {})
+            return data
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {"total_visits": 0, "daily": {}}
+
+
+def _save_analytics(data: dict):
+    try:
+        with open(ANALYTICS_FILE, "w") as f:
+            json.dump(data, f)
+    except OSError:
+        pass  # Ephemeral filesystem on Render — counts survive within a dyno session
+
+
+_analytics = _load_analytics()
 
 
 def _headers():
@@ -122,6 +148,54 @@ def refresh():
         return jsonify({"error": "Unauthorized"}), 401
     _cache.clear()
     return jsonify({"message": "Cache cleared. Next request will fetch fresh data."})
+
+
+@app.route("/api/analytics/visit", methods=["POST"])
+@limiter.limit("10 per minute")
+def analytics_visit():
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    ip = get_remote_address() or "unknown"
+    visitor_hash = hashlib.sha256(f"{ip}:{today}".encode()).hexdigest()[:16]
+
+    daily = _analytics.setdefault("daily", {})
+    day = daily.setdefault(today, {"visits": 0, "unique": []})
+
+    day["visits"] += 1
+    _analytics["total_visits"] = _analytics.get("total_visits", 0) + 1
+
+    if visitor_hash not in day["unique"]:
+        day["unique"].append(visitor_hash)
+
+    _save_analytics(_analytics)
+    return jsonify({"ok": True})
+
+
+@app.route("/api/analytics")
+def analytics():
+    token = request.headers.get("X-Refresh-Token", "")
+    if not REFRESH_SECRET or token != REFRESH_SECRET:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    daily = _analytics.get("daily", {})
+
+    days = []
+    for i in range(6, -1, -1):
+        d = (datetime.now(timezone.utc) - timedelta(days=i)).strftime("%Y-%m-%d")
+        d_data = daily.get(d, {"visits": 0, "unique": []})
+        days.append({
+            "date": d,
+            "visits": d_data["visits"],
+            "unique_visitors": len(d_data["unique"]),
+        })
+
+    today_data = daily.get(today, {"visits": 0, "unique": []})
+    return jsonify({
+        "total_visits": _analytics.get("total_visits", 0),
+        "today_visits": today_data["visits"],
+        "today_unique_visitors": len(today_data["unique"]),
+        "last_7_days": days,
+    })
 
 
 if __name__ == "__main__":
