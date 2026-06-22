@@ -5,9 +5,10 @@ import MatchSection from './components/MatchSection'
 import Standings from './components/Standings'
 import MatchModal from './components/MatchModal'
 import AdminPanel from './components/AdminPanel'
+import BracketView from './components/BracketView'
 import './App.css'
 
-const TABS = ['Matches', 'Standings']
+const TABS = ['Matches', 'Standings', 'Bracket']
 const API_BASE = import.meta.env.VITE_API_URL || ''
 
 export default function App() {
@@ -64,6 +65,10 @@ export default function App() {
 
         {!loading && !error && tab === 'Standings' && (
           <Standings standings={standings} />
+        )}
+
+        {!loading && !error && tab === 'Bracket' && (
+          <BracketView matches={matches} onSelectMatch={setSelectedMatch} />
         )}
       </main>
 

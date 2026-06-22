@@ -11,11 +11,11 @@
   --border: #30363d;
   --text-primary: #e6edf3;
   --text-secondary: #8b949e;
-  --accent: #f5a623;
-  --accent-dark: #c07d10;
+  --accent: #2563eb;
+  --accent-dark: #1d4ed8;
   --live: #3fb950;
   --live-glow: rgba(63, 185, 80, 0.25);
-  --qualify: rgba(245, 166, 35, 0.08);
+  --qualify: rgba(37, 99, 235, 0.08);
   --radius: 10px;
   --shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
 }

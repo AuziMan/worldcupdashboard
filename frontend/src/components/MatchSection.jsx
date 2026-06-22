@@ -25,10 +25,8 @@ export default function MatchSection({ matches, onSelectMatch }) {
   const upcoming = all
     .filter(m => m.status === 'SCHEDULED' || m.status === 'TIMED')
     .filter(m => new Date(m.utcDate) >= twoHoursAgo)
-    .slice(0, 12)
   const recent = all
     .filter(m => m.status === 'FINISHED')
-    .slice(-6)
     .reverse()
 
   const upcomingByDate = groupByDate(upcoming)

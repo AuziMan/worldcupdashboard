@@ -1,7 +1,7 @@
 function GroupTable({ group }) {
   return (
     <div className="group-table">
-      <h3 className="group-name">Group {group.stage?.replace('GROUP_STAGE', '')} {group.group?.replace('GROUP_', '')}</h3>
+      <h3 className="group-name">{group.group}</h3>
       <table>
         <thead>
           <tr>

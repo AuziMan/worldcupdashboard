@@ -35,7 +35,9 @@ function MatchMinute({ status, minute }) {
   return null
 }
 
-export default function MatchCard({ match, onClick }) {
+import { memo } from 'react'
+
+function MatchCard({ match, onClick }) {
   const { homeTeam, awayTeam, score, status, utcDate, stage, group, minute } = match
 
   const kickoff = new Date(utcDate)
@@ -79,3 +81,5 @@ export default function MatchCard({ match, onClick }) {
     </div>
   )
 }
+
+export default memo(MatchCard)

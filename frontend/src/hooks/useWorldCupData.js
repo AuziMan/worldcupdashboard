@@ -16,6 +16,32 @@ function hasLiveMatches(matchData) {
   ) ?? false
 }
 
+// Preserve JS reference identity for matches whose live-relevant fields haven't
+// changed, so React.memo on MatchCard can skip re-renders for non-live cards.
+function mergeMatches(prev, next) {
+  if (!prev?.matches) return next
+  const prevById = new Map(prev.matches.map(m => [m.id, m]))
+  let changed = false
+  const merged = next.matches.map(m => {
+    const old = prevById.get(m.id)
+    if (
+      old &&
+      old.status === m.status &&
+      old.score?.fullTime?.home === m.score?.fullTime?.home &&
+      old.score?.fullTime?.away === m.score?.fullTime?.away &&
+      old.score?.halfTime?.home === m.score?.halfTime?.home &&
+      old.score?.halfTime?.away === m.score?.halfTime?.away &&
+      old.minute === m.minute
+    ) {
+      return old
+    }
+    changed = true
+    return m
+  })
+  if (!changed) return prev
+  return { ...next, matches: merged }
+}
+
 const API_BASE = import.meta.env.VITE_API_URL || ''
 
 async function fetchJSON(path) {
@@ -34,8 +60,8 @@ export function useWorldCupData() {
   const [isLiveMode, setIsLiveMode] = useState(false)
   const intervalRef = useRef(null)
 
-  const load = useCallback(async () => {
-    setLoading(true)
+  const load = useCallback(async (showLoading = false) => {
+    if (showLoading) setLoading(true)
     setError(null)
     try {
       const [matchData, standingData, statusData] = await Promise.all([
@@ -43,7 +69,7 @@ export function useWorldCupData() {
         fetchJSON('/api/standings'),
         fetchJSON('/api/status'),
       ])
-      setMatches(matchData)
+      setMatches(prev => mergeMatches(prev, matchData))
       setStandings(standingData)
       setStatus(statusData)
       setLastFetched(new Date())
@@ -51,7 +77,7 @@ export function useWorldCupData() {
     } catch (err) {
       setError(err.message)
     } finally {
-      setLoading(false)
+      if (showLoading) setLoading(false)
     }
   }, [])
 
@@ -60,14 +86,14 @@ export function useWorldCupData() {
     if (intervalRef.current) clearInterval(intervalRef.current)
     const interval = isLiveMode ? INTERVAL_LIVE : INTERVAL_DEFAULT
     intervalRef.current = setInterval(() => {
-      if (isActiveHour()) load()
+      if (isActiveHour()) load(false)
     }, interval)
     return () => clearInterval(intervalRef.current)
   }, [isLiveMode, load])
 
   useEffect(() => {
-    load()
+    load(true)
   }, [load])
 
-  return { matches, standings, status, loading, error, lastFetched, isLiveMode, refresh: load }
+  return { matches, standings, status, loading, error, lastFetched, isLiveMode, refresh: () => load(true) }
 }
