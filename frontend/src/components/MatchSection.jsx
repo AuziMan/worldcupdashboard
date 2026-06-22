@@ -19,14 +19,15 @@ export default function MatchSection({ matches, onSelectMatch }) {
 
   const all = matches.matches
   const now = new Date()
+  const hasTeams = m => m.homeTeam?.name && m.awayTeam?.name
 
-  const live = all.filter(m => m.status === 'IN_PLAY' || m.status === 'PAUSED')
+  const live = all.filter(m => (m.status === 'IN_PLAY' || m.status === 'PAUSED') && hasTeams(m))
   const twoHoursAgo = new Date(now - 2 * 60 * 60 * 1000)
   const upcoming = all
-    .filter(m => m.status === 'SCHEDULED' || m.status === 'TIMED')
+    .filter(m => (m.status === 'SCHEDULED' || m.status === 'TIMED') && hasTeams(m))
     .filter(m => new Date(m.utcDate) >= twoHoursAgo)
   const recent = all
-    .filter(m => m.status === 'FINISHED')
+    .filter(m => m.status === 'FINISHED' && hasTeams(m))
     .reverse()
 
   const upcomingByDate = groupByDate(upcoming)

@@ -14,7 +14,7 @@ function GroupTable({ group }) {
             <th>GF</th>
             <th>GA</th>
             <th>GD</th>
-            <th>Pts</th>
+            <th className="pts">Pts</th>
           </tr>
         </thead>
         <tbody>
