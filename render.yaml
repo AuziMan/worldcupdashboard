@@ -8,3 +8,9 @@ services:
     envVars:
       - key: FOOTBALL_DATA_API_KEY
         sync: false
+      - key: REFRESH_SECRET
+        sync: false
+      - key: UPSTASH_REDIS_REST_URL
+        sync: false
+      - key: UPSTASH_REDIS_REST_TOKEN
+        sync: false

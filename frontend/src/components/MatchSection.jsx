@@ -21,7 +21,7 @@ export default function MatchSection({ matches, onSelectMatch }) {
   const now = new Date()
   const hasTeams = m => m.homeTeam?.name && m.awayTeam?.name
 
-  const live = all.filter(m => (m.status === 'IN_PLAY' || m.status === 'PAUSED') && hasTeams(m))
+  const live = all.filter(m => (m.status === 'IN_PLAY' || m.status === 'PAUSED' || m.status === 'SUSPENDED') && hasTeams(m))
   const twoHoursAgo = new Date(now - 2 * 60 * 60 * 1000)
   const upcoming = all
     .filter(m => (m.status === 'SCHEDULED' || m.status === 'TIMED') && hasTeams(m))

@@ -6,7 +6,8 @@ const STATUS_LABELS = {
   FINISHED: 'Final',
   POSTPONED: 'Postponed',
   CANCELLED: 'Cancelled',
-  SUSPENDED: 'Suspended',
+  SUSPENDED: 'Delayed',
+  AWARDED: 'Awarded',
 }
 
 function TeamSide({ team, score }) {
@@ -42,17 +43,18 @@ function MatchCard({ match, onClick }) {
 
   const kickoff = new Date(utcDate)
   const isLive = status === 'IN_PLAY' || status === 'PAUSED'
-  const isFinished = status === 'FINISHED'
-  const isPending = !isLive && !isFinished
+  const isSuspended = status === 'SUSPENDED'
+  const isFinished = status === 'FINISHED' || status === 'AWARDED'
+  const isPending = !isLive && !isSuspended && !isFinished
 
-  const homeScore = isLive || isFinished ? score?.fullTime?.home : null
-  const awayScore = isLive || isFinished ? score?.fullTime?.away : null
+  const homeScore = isLive || isSuspended || isFinished ? score?.fullTime?.home : null
+  const awayScore = isLive || isSuspended || isFinished ? score?.fullTime?.away : null
 
   const statusLabel = STATUS_LABELS[status] || status
 
   return (
     <div
-      className={`match-card ${isLive ? 'match-card--live' : ''} ${isFinished ? 'match-card--finished' : ''}`}
+      className={`match-card ${isLive ? 'match-card--live' : ''} ${isSuspended ? 'match-card--suspended' : ''} ${isFinished ? 'match-card--finished' : ''}`}
       onClick={onClick}
       role="button"
       tabIndex={0}

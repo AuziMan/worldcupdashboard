@@ -3,7 +3,6 @@ from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 import hashlib
-import json
 import requests
 import os
 from datetime import datetime, timedelta, timezone
@@ -29,6 +28,8 @@ limiter = Limiter(
 
 API_KEY = os.getenv("FOOTBALL_DATA_API_KEY", "")
 REFRESH_SECRET = os.getenv("REFRESH_SECRET", "")
+REDIS_URL = os.getenv("UPSTASH_REDIS_REST_URL", "")
+REDIS_TOKEN = os.getenv("UPSTASH_REDIS_REST_TOKEN", "")
 BASE_URL = "https://api.football-data.org/v4"
 COMPETITION = "WC"
 CACHE_TTL_DEFAULT = timedelta(seconds=60)
@@ -36,29 +37,11 @@ CACHE_TTL_LIVE = timedelta(seconds=60)
 
 _cache: dict = {}
 
-ANALYTICS_FILE = os.path.join(os.path.dirname(__file__), "analytics.json")
-
-
-def _load_analytics() -> dict:
-    try:
-        with open(ANALYTICS_FILE) as f:
-            data = json.load(f)
-            data.setdefault("total_visits", 0)
-            data.setdefault("daily", {})
-            return data
-    except (FileNotFoundError, json.JSONDecodeError):
-        return {"total_visits": 0, "daily": {}}
-
-
-def _save_analytics(data: dict):
-    try:
-        with open(ANALYTICS_FILE, "w") as f:
-            json.dump(data, f)
-    except OSError:
-        pass  # Ephemeral filesystem on Render — counts survive within a dyno session
-
-
-_analytics = _load_analytics()
+try:
+    from upstash_redis import Redis
+    _redis = Redis(url=REDIS_URL, token=REDIS_TOKEN) if REDIS_URL and REDIS_TOKEN else None
+except Exception:
+    _redis = None
 
 
 def _headers():
@@ -153,20 +136,23 @@ def refresh():
 @app.route("/api/analytics/visit", methods=["POST"])
 @limiter.limit("10 per minute")
 def analytics_visit():
-    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-    ip = get_remote_address() or "unknown"
-    visitor_hash = hashlib.sha256(f"{ip}:{today}".encode()).hexdigest()[:16]
+    if not _redis:
+        return jsonify({"ok": True})
+    try:
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        ip = get_remote_address() or "unknown"
+        visitor_hash = hashlib.sha256(f"{ip}:{today}".encode()).hexdigest()[:16]
+        ttl = 90 * 24 * 3600  # 90 days
 
-    daily = _analytics.setdefault("daily", {})
-    day = daily.setdefault(today, {"visits": 0, "unique": []})
-
-    day["visits"] += 1
-    _analytics["total_visits"] = _analytics.get("total_visits", 0) + 1
-
-    if visitor_hash not in day["unique"]:
-        day["unique"].append(visitor_hash)
-
-    _save_analytics(_analytics)
+        pipe = _redis.pipeline()
+        pipe.incr("wcd:total_visits")
+        pipe.incr(f"wcd:daily:{today}:visits")
+        pipe.sadd(f"wcd:daily:{today}:unique", visitor_hash)
+        pipe.expire(f"wcd:daily:{today}:visits", ttl)
+        pipe.expire(f"wcd:daily:{today}:unique", ttl)
+        pipe.execute()
+    except Exception:
+        pass
     return jsonify({"ok": True})
 
 
@@ -175,25 +161,35 @@ def analytics():
     token = request.headers.get("X-Refresh-Token", "")
     if not REFRESH_SECRET or token != REFRESH_SECRET:
         return jsonify({"error": "Unauthorized"}), 401
+    if not _redis:
+        return jsonify({"error": "Analytics not configured"}), 503
 
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-    daily = _analytics.get("daily", {})
+    date_keys = [
+        (datetime.now(timezone.utc) - timedelta(days=i)).strftime("%Y-%m-%d")
+        for i in range(6, -1, -1)
+    ]
+
+    pipe = _redis.pipeline()
+    for d in date_keys:
+        pipe.get(f"wcd:daily:{d}:visits")
+        pipe.scard(f"wcd:daily:{d}:unique")
+    pipe.get("wcd:total_visits")
+    results = pipe.execute()
 
     days = []
-    for i in range(6, -1, -1):
-        d = (datetime.now(timezone.utc) - timedelta(days=i)).strftime("%Y-%m-%d")
-        d_data = daily.get(d, {"visits": 0, "unique": []})
+    for i, d in enumerate(date_keys):
         days.append({
             "date": d,
-            "visits": d_data["visits"],
-            "unique_visitors": len(d_data["unique"]),
+            "visits": int(results[i * 2] or 0),
+            "unique_visitors": int(results[i * 2 + 1] or 0),
         })
 
-    today_data = daily.get(today, {"visits": 0, "unique": []})
+    today_data = next((x for x in days if x["date"] == today), {"visits": 0, "unique_visitors": 0})
     return jsonify({
-        "total_visits": _analytics.get("total_visits", 0),
+        "total_visits": int(results[-1] or 0),
         "today_visits": today_data["visits"],
-        "today_unique_visitors": len(today_data["unique"]),
+        "today_unique_visitors": today_data["unique_visitors"],
         "last_7_days": days,
     })
 
