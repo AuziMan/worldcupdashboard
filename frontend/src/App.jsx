@@ -45,10 +45,8 @@ export default function App() {
       <main className="main-content">
         {error && (
           <div className="error-banner">
-            <strong>Could not load data:</strong> {error}
-            {error.includes('401') && (
-              <p>Check that your <code>FOOTBALL_DATA_API_KEY</code> is set in <code>backend/.env</code>.</p>
-            )}
+            <strong>Having trouble loading match data.</strong>
+            <p>The server may be waking up — please wait a moment and try refreshing.</p>
           </div>
         )}
 

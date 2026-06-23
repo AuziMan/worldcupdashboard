@@ -47,7 +47,7 @@ export default function Standings({ standings }) {
   const groups = standings?.standings
 
   if (!groups?.length) {
-    return <p className="empty-state">Standings not yet available.</p>
+    return <p className="empty-state">Standings will appear once group stage matches get underway.</p>
   }
 
   return (

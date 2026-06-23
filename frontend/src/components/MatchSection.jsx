@@ -14,7 +14,7 @@ function groupByDate(matches) {
 
 export default function MatchSection({ matches, onSelectMatch }) {
   if (!matches?.matches?.length) {
-    return <p className="empty-state">No matches found.</p>
+    return <p className="empty-state">No matches to show right now. Check back soon!</p>
   }
 
   const all = matches.matches

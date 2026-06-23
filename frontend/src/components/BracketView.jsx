@@ -12,7 +12,7 @@ const STAGE_LABELS = {
 
 export default function BracketView({ matches, onSelectMatch }) {
   if (!matches?.matches?.length) {
-    return <p className="empty-state">No match data available.</p>
+    return <p className="empty-state">No match data available yet. Check back soon!</p>
   }
 
   const knockout = matches.matches.filter(m => m.stage && m.stage !== 'GROUP_STAGE')
