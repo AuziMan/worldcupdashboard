@@ -150,7 +150,7 @@ def analytics_visit():
         pipe.sadd(f"wcd:daily:{today}:unique", visitor_hash)
         pipe.expire(f"wcd:daily:{today}:visits", ttl)
         pipe.expire(f"wcd:daily:{today}:unique", ttl)
-        pipe.execute()
+        pipe.exec()
     except Exception:
         pass
     return jsonify({"ok": True})
@@ -175,7 +175,7 @@ def analytics():
         pipe.get(f"wcd:daily:{d}:visits")
         pipe.scard(f"wcd:daily:{d}:unique")
     pipe.get("wcd:total_visits")
-    results = pipe.execute()
+    results = pipe.exec()
 
     days = []
     for i, d in enumerate(date_keys):
