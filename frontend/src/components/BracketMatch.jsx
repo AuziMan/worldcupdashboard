@@ -17,8 +17,8 @@ import { memo } from 'react'
 
 function BracketMatch({ match, onClick }) {
   const { homeTeam, awayTeam, score, status, utcDate } = match
-  const isLive = status === 'IN_PLAY' || status === 'PAUSED'
-  const isFinished = status === 'FINISHED'
+  const isLive = status === 'IN_PLAY' || status === 'LIVE' || status === 'PAUSED'
+  const isFinished = status === 'FINISHED' || status === 'AWARDED'
   const showScore = isLive || isFinished
 
   const homeScore = showScore ? (score?.fullTime?.home ?? null) : null

@@ -2,6 +2,7 @@ const STATUS_LABELS = {
   SCHEDULED: 'Upcoming',
   TIMED: 'Upcoming',
   IN_PLAY: 'Live',
+  LIVE: 'Live',
   PAUSED: 'Half Time',
   FINISHED: 'Final',
   POSTPONED: 'Postponed',
@@ -42,7 +43,7 @@ function MatchCard({ match, onClick }) {
   const { homeTeam, awayTeam, score, status, utcDate, stage, group, minute } = match
 
   const kickoff = new Date(utcDate)
-  const isLive = status === 'IN_PLAY' || status === 'PAUSED'
+  const isLive = status === 'IN_PLAY' || status === 'LIVE' || status === 'PAUSED'
   const isSuspended = status === 'SUSPENDED'
   const isFinished = status === 'FINISHED' || status === 'AWARDED'
   const isPending = !isLive && !isSuspended && !isFinished

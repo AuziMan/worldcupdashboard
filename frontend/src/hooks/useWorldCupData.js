@@ -12,7 +12,7 @@ function isActiveHour() {
 
 function hasLiveMatches(matchData) {
   return matchData?.matches?.some(
-    m => m.status === 'IN_PLAY' || m.status === 'PAUSED'
+    m => m.status === 'IN_PLAY' || m.status === 'LIVE' || m.status === 'PAUSED'
   ) ?? false
 }
 
