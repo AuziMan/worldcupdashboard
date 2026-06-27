@@ -62,7 +62,7 @@ export default function App() {
         )}
 
         {!loading && !error && tab === 'Standings' && (
-          <Standings standings={standings} />
+          <Standings standings={standings} matches={matches} />
         )}
 
         {!loading && !error && tab === 'Bracket' && (

@@ -1,4 +1,31 @@
-function GroupTable({ group }) {
+function buildFormMap(allMatches) {
+  const finished = (allMatches || [])
+    .filter(m => m.status === 'FINISHED' && m.score?.fullTime?.home != null)
+    .sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate))
+
+  const map = {}
+  for (const m of finished) {
+    const hId = m.homeTeam?.id
+    const aId = m.awayTeam?.id
+    const hG = m.score.fullTime.home
+    const aG = m.score.fullTime.away
+
+    if (hId) {
+      if (!map[hId]) map[hId] = []
+      map[hId].push(hG > aG ? 'W' : hG < aG ? 'L' : 'D')
+    }
+    if (aId) {
+      if (!map[aId]) map[aId] = []
+      map[aId].push(aG > hG ? 'W' : aG < hG ? 'L' : 'D')
+    }
+  }
+  for (const id of Object.keys(map)) {
+    map[id] = map[id].slice(-5)
+  }
+  return map
+}
+
+function GroupTable({ group, formMap }) {
   return (
     <div className="group-table">
       <h3 className="group-name">{group.group}</h3>
@@ -15,6 +42,7 @@ function GroupTable({ group }) {
             <th>GA</th>
             <th>GD</th>
             <th className="pts">Pts</th>
+            <th className="form-th">Form</th>
           </tr>
         </thead>
         <tbody>
@@ -35,6 +63,13 @@ function GroupTable({ group }) {
               <td>{row.goalsAgainst}</td>
               <td>{row.goalDifference > 0 ? `+${row.goalDifference}` : row.goalDifference}</td>
               <td className="pts">{row.points}</td>
+              <td>
+                <div className="form-col">
+                  {(formMap[row.team.id] || []).map((r, i) => (
+                    <span key={i} className={`form-badge form-badge--${r.toLowerCase()}`}>{r}</span>
+                  ))}
+                </div>
+              </td>
             </tr>
           ))}
         </tbody>
@@ -43,19 +78,21 @@ function GroupTable({ group }) {
   )
 }
 
-export default function Standings({ standings }) {
+export default function Standings({ standings, matches }) {
   const groups = standings?.standings
 
   if (!groups?.length) {
     return <p className="empty-state">Standings will appear once group stage matches get underway.</p>
   }
 
+  const formMap = buildFormMap(matches?.matches)
+
   return (
     <div className="standings-section">
       <h2 className="section-title">Group Stage Standings</h2>
       <div className="standings-grid">
         {groups.map((g, i) => (
-          <GroupTable key={i} group={g} />
+          <GroupTable key={i} group={g} formMap={formMap} />
         ))}
       </div>
     </div>
