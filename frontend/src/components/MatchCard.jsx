@@ -52,12 +52,12 @@ function MatchCard({ match, onClick }) {
   const homeWins = hasScore && homeScore > awayScore
   const awayWins = hasScore && awayScore > homeScore
 
-  // Estimate minute from kickoff time if API doesn't provide it
-  const estimatedMinute = isLive
-    ? (minute ?? Math.min(Math.round((Date.now() - kickoff) / 60000), 90))
+  // Elapsed wall-clock minutes since kickoff (115 = 45' + 15' HT + 45' + hydration breaks)
+  const elapsedMinutes = isLive
+    ? (minute ?? Math.round((Date.now() - kickoff) / 60000))
     : null
-  const progressPct = (status === 'IN_PLAY' || status === 'LIVE') && estimatedMinute != null
-    ? Math.min((estimatedMinute / 90) * 100, 100)
+  const progressPct = (status === 'IN_PLAY' || status === 'LIVE') && elapsedMinutes != null
+    ? Math.min((elapsedMinutes / 115) * 100, 100)
     : null
 
   const statusLabel = STATUS_LABELS[status] || status
