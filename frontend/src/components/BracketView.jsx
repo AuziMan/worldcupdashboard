@@ -10,6 +10,54 @@ const STAGE_LABELS = {
   THIRD_PLACE: '3rd Place',
 }
 
+// Sort each stage's matches into correct bracket draw order by tracing team IDs
+// backwards from later rounds (which have correct ID-based ordering).
+function sortByBracket(rawByStage) {
+  const stages = STAGE_ORDER.filter(s => rawByStage[s]?.length)
+
+  const result = {}
+  for (const s of stages) {
+    result[s] = [...rawByStage[s]].sort((a, b) => a.id - b.id)
+  }
+
+  for (let i = stages.length - 2; i >= 0; i--) {
+    const cur = stages[i]
+    const next = stages[i + 1]
+
+    const curMatches = result[cur]
+    const nextMatches = result[next]
+
+    const teamToMatch = new Map()
+    for (const m of curMatches) {
+      if (m.homeTeam?.id) teamToMatch.set(m.homeTeam.id, m)
+      if (m.awayTeam?.id) teamToMatch.set(m.awayTeam.id, m)
+    }
+
+    const ordered = []
+    const seen = new Set()
+
+    for (const nextM of nextMatches) {
+      for (const team of [nextM.homeTeam, nextM.awayTeam]) {
+        if (!team?.id) continue
+        const feeder = teamToMatch.get(team.id)
+        if (feeder && !seen.has(feeder.id)) {
+          ordered.push(feeder)
+          seen.add(feeder.id)
+        }
+      }
+    }
+
+    // Append unmatched matches (TBD teams / incomplete data), preserving ID order
+    for (const m of curMatches) {
+      if (!seen.has(m.id)) ordered.push(m)
+    }
+
+    result[cur] = ordered
+  }
+
+  return result
+}
+
 export default function BracketView({ matches, onSelectMatch }) {
   if (!matches?.matches?.length) {
     return <p className="empty-state">No match data available yet. Check back soon!</p>
@@ -25,13 +73,14 @@ export default function BracketView({ matches, onSelectMatch }) {
     )
   }
 
-  const byStage = {}
+  const rawByStage = {}
   for (const m of knockout) {
-    if (!byStage[m.stage]) byStage[m.stage] = []
-    byStage[m.stage].push(m)
+    if (!rawByStage[m.stage]) rawByStage[m.stage] = []
+    rawByStage[m.stage].push(m)
   }
 
-  const thirdPlace = byStage['THIRD_PLACE'] || []
+  const thirdPlace = rawByStage['THIRD_PLACE'] || []
+  const byStage = sortByBracket(rawByStage)
   const rounds = STAGE_ORDER.filter(s => byStage[s]?.length)
 
   return (
@@ -64,7 +113,7 @@ export default function BracketView({ matches, onSelectMatch }) {
                         <BracketMatch match={match} onClick={() => onSelectMatch(match)} />
                       </div>
                     ))}
-                    {pair.length === 1 && <div className="bracket-slot bracket-slot--empty" />}
+                    {pair.length === 1 && !isLast && <div className="bracket-slot bracket-slot--empty" />}
                   </div>
                 ))}
               </div>
