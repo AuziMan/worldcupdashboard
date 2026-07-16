@@ -39,9 +39,14 @@
   gap: 14px;
 }
 
-.trophy {
-  font-size: 2rem;
-  line-height: 1;
+.league-logo {
+  height: 40px;
+  width: 40px;
+  object-fit: contain;
+  background: #fff;
+  border-radius: 8px;
+  padding: 4px;
+  box-sizing: border-box;
 }
 
 .header-title h1 {
@@ -1260,7 +1265,7 @@ tbody td {
 /* ── Responsive ─────────────────────────────────── */
 @media (max-width: 600px) {
   .header-title h1 { font-size: 1.1rem; }
-  .trophy { font-size: 1.5rem; }
+  .league-logo { height: 30px; width: 30px; }
   .match-grid { grid-template-columns: 1fr; }
   .standings-grid { grid-template-columns: 1fr; }
   .tab-btn { padding: 12px 12px 10px; font-size: 0.85rem; }

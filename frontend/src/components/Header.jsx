@@ -7,7 +7,7 @@ export default function Header({ league, lastFetched, onRefresh, loading }) {
     <header className="header">
       <div className="header-inner">
         <div className="header-title">
-          <span className="trophy">{league.icon}</span>
+          <img className="league-logo" src={league.logo} alt={`${league.name} logo`} />
           <div>
             <h1>{league.name}</h1>
             <p className="header-subtitle">{league.subtitle}</p>
