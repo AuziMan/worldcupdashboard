@@ -51,7 +51,7 @@ function Squad({ teamData, loading }) {
   )
 }
 
-export default function MatchModal({ match, onClose }) {
+export default function MatchModal({ match, league, onClose }) {
   const [homeTeamData, setHomeTeamData] = useState(null)
   const [awayTeamData, setAwayTeamData] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -61,8 +61,8 @@ export default function MatchModal({ match, onClose }) {
       setLoading(true)
       try {
         const [home, away] = await Promise.all([
-          fetch(`${API_BASE}/api/teams/${match.homeTeam.id}`).then(r => r.json()),
-          fetch(`${API_BASE}/api/teams/${match.awayTeam.id}`).then(r => r.json()),
+          fetch(`${API_BASE}/api/${league}/teams/${match.homeTeam.id}`).then(r => r.json()),
+          fetch(`${API_BASE}/api/${league}/teams/${match.awayTeam.id}`).then(r => r.json()),
         ])
         setHomeTeamData(home)
         setAwayTeamData(away)
@@ -73,7 +73,7 @@ export default function MatchModal({ match, onClose }) {
       }
     }
     fetchSquads()
-  }, [match.homeTeam.id, match.awayTeam.id])
+  }, [league, match.homeTeam.id, match.awayTeam.id])
 
   // Close on backdrop click or Escape key
   useEffect(() => {
@@ -85,7 +85,9 @@ export default function MatchModal({ match, onClose }) {
   const { homeTeam, awayTeam, score, status, utcDate, group, stage, referees } = match
   const isLive = status === 'IN_PLAY' || status === 'PAUSED'
   const isFinished = status === 'FINISHED'
-  const showScore = isLive || isFinished
+  const hasScore = score?.fullTime?.home != null && score?.fullTime?.away != null
+  const showScore = (isLive || isFinished) && hasScore
+  const scoreUnavailable = (isLive || isFinished) && !hasScore
   const kickoff = new Date(utcDate)
   const referee = referees?.[0]
 
@@ -108,6 +110,8 @@ export default function MatchModal({ match, onClose }) {
                 <span className="modal-score-sep">–</span>
                 <span>{score.fullTime.away}</span>
               </div>
+            ) : scoreUnavailable ? (
+              <div className="modal-kickoff">{isLive ? 'Active' : 'Score unavailable'}</div>
             ) : (
               <div className="modal-kickoff">
                 {kickoff.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}

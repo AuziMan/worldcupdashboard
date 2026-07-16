@@ -25,10 +25,10 @@ function buildFormMap(allMatches) {
   return map
 }
 
-function GroupTable({ group, formMap }) {
+function GroupTable({ group, formMap, highlightTop }) {
   return (
     <div className="group-table">
-      <h3 className="group-name">{group.group}</h3>
+      <h3 className="group-name">{group.group || 'Table'}</h3>
       <table>
         <thead>
           <tr>
@@ -47,7 +47,7 @@ function GroupTable({ group, formMap }) {
         </thead>
         <tbody>
           {group.table.map(row => (
-            <tr key={row.team.id} className={row.position <= 2 ? 'row--qualify' : ''}>
+            <tr key={row.team.id} className={highlightTop && row.position <= 2 ? 'row--qualify' : ''}>
               <td className="pos">{row.position}</td>
               <td className="team-cell">
                 {row.team.crest && (
@@ -78,21 +78,21 @@ function GroupTable({ group, formMap }) {
   )
 }
 
-export default function Standings({ standings, matches }) {
+export default function Standings({ standings, matches, highlightTop = true }) {
   const groups = standings?.standings
 
   if (!groups?.length) {
-    return <p className="empty-state">Standings will appear once group stage matches get underway.</p>
+    return <p className="empty-state">Standings will appear once matches get underway.</p>
   }
 
   const formMap = buildFormMap(matches?.matches)
 
   return (
     <div className="standings-section">
-      <h2 className="section-title">Group Stage Standings</h2>
+      <h2 className="section-title">{highlightTop ? 'Group Stage Standings' : 'Standings'}</h2>
       <div className="standings-grid">
         {groups.map((g, i) => (
-          <GroupTable key={i} group={g} formMap={formMap} />
+          <GroupTable key={i} group={g} formMap={formMap} highlightTop={highlightTop} />
         ))}
       </div>
     </div>

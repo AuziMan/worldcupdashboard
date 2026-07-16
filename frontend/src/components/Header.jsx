@@ -1,4 +1,4 @@
-export default function Header({ lastFetched, onRefresh, loading }) {
+export default function Header({ league, lastFetched, onRefresh, loading }) {
   const formatted = lastFetched
     ? lastFetched.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     : null
@@ -7,10 +7,10 @@ export default function Header({ lastFetched, onRefresh, loading }) {
     <header className="header">
       <div className="header-inner">
         <div className="header-title">
-          <span className="trophy">🏆</span>
+          <span className="trophy">{league.icon}</span>
           <div>
-            <h1>FIFA World Cup 2026</h1>
-            <p className="header-subtitle">USA · Canada · Mexico</p>
+            <h1>{league.name}</h1>
+            <p className="header-subtitle">{league.subtitle}</p>
           </div>
         </div>
         <div className="header-actions">

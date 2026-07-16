@@ -47,10 +47,15 @@ function MatchCard({ match, onClick }) {
 
   const homeScore = isLive || isSuspended || isFinished ? score?.fullTime?.home : null
   const awayScore = isLive || isSuspended || isFinished ? score?.fullTime?.away : null
-  const hasScore = homeScore !== null && homeScore !== undefined
+  const hasScore = homeScore !== null && homeScore !== undefined && awayScore !== null && awayScore !== undefined
 
   const homeWins = hasScore && homeScore > awayScore
   const awayWins = hasScore && awayScore > homeScore
+
+  // Provider gave us a live/finished match but no usable score (e.g. ESPN
+  // dropped the field) — show a neutral placeholder rather than risk a stale
+  // or wrong-looking number.
+  const scoreUnavailable = (isLive || isFinished) && !hasScore
 
   // Elapsed wall-clock minutes since kickoff (115 = 45' + 15' HT + 45' + hydration breaks)
   const elapsedMinutes = isLive
@@ -81,9 +86,11 @@ function MatchCard({ match, onClick }) {
         <div className="match-vs">
           {hasScore
             ? <span className="match-score">{homeScore}<span className="match-score-sep"> – </span>{awayScore}</span>
-            : countdown
-              ? <span className="match-countdown">{countdown}</span>
-              : kickoff.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            : scoreUnavailable
+              ? <span className="match-score-unavailable">{isLive ? 'Active' : 'Score unavailable'}</span>
+              : countdown
+                ? <span className="match-countdown">{countdown}</span>
+                : kickoff.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
           }
         </div>
         <TeamSide team={awayTeam} isWinner={isFinished && awayWins} />

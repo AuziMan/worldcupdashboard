@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useWorldCupData } from './hooks/useWorldCupData'
+import { useLeagueData } from './hooks/useLeagueData'
 import Header from './components/Header'
 import MatchSection from './components/MatchSection'
 import Standings from './components/Standings'
@@ -8,10 +8,37 @@ import AdminPanel from './components/AdminPanel'
 import BracketView from './components/BracketView'
 import './App.css'
 
-const TABS = ['Matches', 'Standings', 'Bracket']
+const LEAGUES = {
+  wc: {
+    label: 'World Cup',
+    name: 'FIFA World Cup 2026',
+    subtitle: 'USA · Canada · Mexico',
+    icon: '🏆',
+    tabs: ['Matches', 'Standings', 'Bracket'],
+    attribution: 'football-data.org',
+  },
+  epl: {
+    label: 'Premier League',
+    name: 'Premier League',
+    subtitle: 'England',
+    icon: '⚽',
+    tabs: ['Matches', 'Standings'],
+    attribution: 'football-data.org',
+  },
+  mls: {
+    label: 'MLS',
+    name: 'Major League Soccer',
+    subtitle: 'USA · Canada',
+    icon: '⚽',
+    tabs: ['Matches', 'Standings'],
+    attribution: 'ESPN',
+  },
+}
+
 const API_BASE = import.meta.env.VITE_API_URL || ''
 
 export default function App() {
+  const [league, setLeague] = useState('wc')
   const [tab, setTab] = useState('Matches')
   const [selectedMatch, setSelectedMatch] = useState(null)
   const isAdmin = window.location.hash === '#admin'
@@ -22,16 +49,35 @@ export default function App() {
       sessionStorage.setItem('_wcd_visited', '1')
     }
   }, [isAdmin])
-  const { matches, standings, loading, error, lastFetched, isLiveMode, refresh } = useWorldCupData()
+  const { matches, standings, loading, error, lastFetched, isLiveMode, refresh } = useLeagueData(league)
 
   if (isAdmin) return <AdminPanel />
 
+  const activeLeague = LEAGUES[league]
+
+  function selectLeague(key) {
+    setLeague(key)
+    if (!LEAGUES[key].tabs.includes(tab)) setTab('Matches')
+  }
+
   return (
     <div className="app">
-      <Header lastFetched={lastFetched} onRefresh={refresh} loading={loading} />
+      <Header league={activeLeague} lastFetched={lastFetched} onRefresh={refresh} loading={loading} />
+
+      <nav className="tab-nav league-nav">
+        {Object.entries(LEAGUES).map(([key, l]) => (
+          <button
+            key={key}
+            className={`tab-btn ${league === key ? 'tab-btn--active' : ''}`}
+            onClick={() => selectLeague(key)}
+          >
+            {l.label}
+          </button>
+        ))}
+      </nav>
 
       <nav className="tab-nav">
-        {TABS.map(t => (
+        {activeLeague.tabs.map(t => (
           <button
             key={t}
             className={`tab-btn ${tab === t ? 'tab-btn--active' : ''}`}
@@ -53,7 +99,7 @@ export default function App() {
         {loading && !matches && (
           <div className="loading-state">
             <div className="spinner" />
-            <p>Loading World Cup data…</p>
+            <p>Loading {activeLeague.name} data…</p>
           </div>
         )}
 
@@ -62,7 +108,7 @@ export default function App() {
         )}
 
         {!loading && !error && tab === 'Standings' && (
-          <Standings standings={standings} matches={matches} />
+          <Standings standings={standings} matches={matches} highlightTop={league === 'wc'} />
         )}
 
         {!loading && !error && tab === 'Bracket' && (
@@ -72,13 +118,13 @@ export default function App() {
 
       <footer className="footer">
         <p>
-          Data provided by football-data.org ·{' '}
+          Data provided by {activeLeague.attribution} ·{' '}
           Refreshes every minute (9 AM – 9 PM){isLiveMode ? ' · Live mode active' : ''}
         </p>
       </footer>
 
       {selectedMatch && (
-        <MatchModal match={selectedMatch} onClose={() => setSelectedMatch(null)} />
+        <MatchModal match={selectedMatch} league={league} onClose={() => setSelectedMatch(null)} />
       )}
     </div>
   )
