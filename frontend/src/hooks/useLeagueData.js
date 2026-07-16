@@ -50,7 +50,7 @@ async function fetchJSON(path) {
   return res.json()
 }
 
-export function useWorldCupData() {
+export function useLeagueData(league) {
   const [matches, setMatches] = useState(null)
   const [standings, setStandings] = useState(null)
   const [status, setStatus] = useState(null)
@@ -65,8 +65,8 @@ export function useWorldCupData() {
     setError(null)
     try {
       const [matchData, standingData, statusData] = await Promise.all([
-        fetchJSON('/api/matches'),
-        fetchJSON('/api/standings'),
+        fetchJSON(`/api/${league}/matches`),
+        fetchJSON(`/api/${league}/standings`),
         fetchJSON('/api/status'),
       ])
       setMatches(prev => mergeMatches(prev, matchData))
@@ -79,7 +79,7 @@ export function useWorldCupData() {
     } finally {
       if (showLoading) setLoading(false)
     }
-  }, [])
+  }, [league])
 
   // Restart interval whenever live mode changes so cadence updates immediately
   useEffect(() => {
@@ -91,9 +91,13 @@ export function useWorldCupData() {
     return () => clearInterval(intervalRef.current)
   }, [isLiveMode, load])
 
+  // Switching leagues: drop stale data and refetch with the loading spinner
   useEffect(() => {
+    setMatches(null)
+    setStandings(null)
+    setIsLiveMode(false)
     load(true)
-  }, [load])
+  }, [league, load])
 
   return { matches, standings, status, loading, error, lastFetched, isLiveMode, refresh: () => load(true) }
 }

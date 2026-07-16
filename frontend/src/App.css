@@ -122,6 +122,18 @@
   border-bottom-color: var(--accent);
 }
 
+.league-nav {
+  background: var(--bg);
+  gap: 8px;
+}
+
+.league-nav .tab-btn {
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  padding: 10px 14px 8px;
+}
+
 /* ── Section Titles ─────────────────────────────── */
 .section-title {
   font-size: 1.05rem;
@@ -342,6 +354,13 @@
   font-size: 0.78rem;
   font-weight: 600;
   color: var(--accent);
+}
+
+.match-score-unavailable {
+  font-size: 0.78rem;
+  font-weight: 600;
+  font-style: italic;
+  color: var(--text-secondary);
 }
 
 .match-progress-bar {
