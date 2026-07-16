@@ -15,10 +15,8 @@ const STATUS_LABELS = {
 
 function formatCountdown(kickoff) {
   const diff = kickoff - Date.now()
-  if (diff <= 0 || diff > 4 * 3600000) return null
-  const h = Math.floor(diff / 3600000)
-  const m = Math.floor((diff % 3600000) / 60000)
-  if (h > 0) return `in ${h}h ${m}m`
+  if (diff <= 0 || diff > 30 * 60000) return null
+  const m = Math.floor(diff / 60000)
   if (m > 0) return `in ${m}m`
   return 'soon'
 }
