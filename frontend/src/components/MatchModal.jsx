@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { getTeamColor } from '../data/teamColors'
 
 const API_BASE = import.meta.env.VITE_API_URL || ''
 
@@ -91,13 +92,20 @@ export default function MatchModal({ match, league, onClose }) {
   const kickoff = new Date(utcDate)
   const referee = referees?.[0]
 
+  const homeColor = getTeamColor(homeTeam)
+  const awayColor = getTeamColor(awayTeam)
+  const heroStyle = {
+    ...(homeColor ? { '--home-color': homeColor } : {}),
+    ...(awayColor ? { '--away-color': awayColor } : {}),
+  }
+
   return (
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal" onClick={e => e.stopPropagation()}>
 
         <button className="modal-close" onClick={onClose} aria-label="Close">✕</button>
 
-        <div className="modal-header">
+        <div className="modal-header" style={heroStyle}>
           <div className="modal-team">
             {homeTeam.crest && <img src={homeTeam.crest} alt={homeTeam.name} className="modal-crest" />}
             <span className="modal-team-name">{homeTeam.name}</span>

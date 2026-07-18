@@ -16,6 +16,7 @@ const LEAGUES = {
     logo: 'https://crests.football-data.org/wm26.png',
     tabs: ['Matches', 'Standings', 'Bracket'],
     attribution: 'football-data.org',
+    accent: '#F5A623',
   },
   epl: {
     label: 'Premier League',
@@ -24,6 +25,7 @@ const LEAGUES = {
     logo: 'https://crests.football-data.org/PL.png',
     tabs: ['Matches', 'Standings'],
     attribution: 'football-data.org',
+    accent: '#2563eb',
   },
   mls: {
     label: 'MLS',
@@ -32,6 +34,7 @@ const LEAGUES = {
     logo: 'https://a.espncdn.com/i/leaguelogos/soccer/500/19.png',
     tabs: ['Matches', 'Standings'],
     attribution: 'ESPN',
+    accent: '#00B140',
   },
 }
 
@@ -61,7 +64,7 @@ export default function App() {
   }
 
   return (
-    <div className="app">
+    <div className="app" style={{ '--league-accent': activeLeague.accent }}>
       <Header league={activeLeague} lastFetched={lastFetched} onRefresh={refresh} loading={loading} />
 
       <nav className="tab-nav league-nav">

@@ -1,3 +1,5 @@
+import { getTeamColor } from '../data/teamColors'
+
 function buildFormMap(allMatches) {
   const finished = (allMatches || [])
     .filter(m => m.status === 'FINISHED' && m.score?.fullTime?.home != null)
@@ -47,7 +49,11 @@ function GroupTable({ group, formMap, highlightTop }) {
         </thead>
         <tbody>
           {group.table.map(row => (
-            <tr key={row.team.id} className={highlightTop && row.position <= 2 ? 'row--qualify' : ''}>
+            <tr
+              key={row.team.id}
+              className={highlightTop && row.position <= 2 ? 'row--qualify' : ''}
+              style={{ '--row-accent': getTeamColor(row.team) || 'transparent' }}
+            >
               <td className="pos">{row.position}</td>
               <td className="team-cell">
                 {row.team.crest && (
