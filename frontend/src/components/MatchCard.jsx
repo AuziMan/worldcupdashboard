@@ -1,4 +1,5 @@
 import { memo } from 'react'
+import { getTeamColor } from '../data/teamColors'
 
 const STATUS_LABELS = {
   SCHEDULED: 'Upcoming',
@@ -66,9 +67,17 @@ function MatchCard({ match, onClick }) {
   const statusLabel = STATUS_LABELS[status] || status
   const countdown = isPending ? formatCountdown(kickoff) : null
 
+  const homeColor = getTeamColor(homeTeam)
+  const awayColor = getTeamColor(awayTeam)
+  const cardStyle = {
+    ...(homeColor ? { '--home-color': homeColor } : {}),
+    ...(awayColor ? { '--away-color': awayColor } : {}),
+  }
+
   return (
     <div
       className={`match-card ${isLive ? 'match-card--live' : ''} ${isSuspended ? 'match-card--suspended' : ''} ${isFinished ? 'match-card--finished' : ''}`}
+      style={cardStyle}
       onClick={onClick}
       role="button"
       tabIndex={0}
