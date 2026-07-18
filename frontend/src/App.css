@@ -614,13 +614,22 @@ tbody td {
   max-height: 90vh;
   overflow-y: auto;
   position: relative;
+  display: flex;
+  flex-direction: column;
   box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.modal::-webkit-scrollbar {
+  display: none;
 }
 
 .modal-close {
   position: sticky;
   top: 12px;
-  float: right;
+  align-self: flex-end;
+  flex-shrink: 0;
   margin: 12px 12px 0 0;
   background: rgba(255,255,255,0.08);
   border: none;
@@ -643,6 +652,7 @@ tbody td {
 }
 
 .modal-header {
+  flex-shrink: 0;
   position: relative;
   isolation: isolate;
   overflow: hidden;
@@ -661,8 +671,8 @@ tbody td {
   inset: 0;
   z-index: -1;
   background:
-    linear-gradient(100deg, color-mix(in srgb, var(--home-color, transparent) 30%, transparent) 0%, transparent 55%),
-    linear-gradient(280deg, color-mix(in srgb, var(--away-color, transparent) 30%, transparent) 0%, transparent 55%);
+    linear-gradient(to right, color-mix(in srgb, var(--home-color, transparent) 30%, transparent) 0%, transparent 55%),
+    linear-gradient(to left, color-mix(in srgb, var(--away-color, transparent) 30%, transparent) 0%, transparent 55%);
   pointer-events: none;
 }
 
@@ -767,6 +777,7 @@ tbody td {
 /* ── Squads ─────────────────────────────────────── */
 .modal-squads {
   display: flex;
+  flex-shrink: 0;
   gap: 0;
   padding: 0;
 }
@@ -775,6 +786,11 @@ tbody td {
   flex: 1;
   padding: 20px 24px 24px;
   min-width: 0;
+  background: color-mix(in srgb, var(--home-color, transparent) 20%, var(--bg-card));
+}
+
+.modal-squad-col--away {
+  background: color-mix(in srgb, var(--away-color, transparent) 20%, var(--bg-card));
 }
 
 .modal-divider {
@@ -1333,6 +1349,11 @@ tbody td {
   .standings-grid { grid-template-columns: 1fr; }
   .tab-btn { padding: 12px 12px 10px; font-size: 0.85rem; }
   .modal-header { flex-direction: column; gap: 16px; }
+  .modal-header::before {
+    background:
+      linear-gradient(to bottom, color-mix(in srgb, var(--home-color, transparent) 30%, transparent) 0%, transparent 55%),
+      linear-gradient(to top, color-mix(in srgb, var(--away-color, transparent) 30%, transparent) 0%, transparent 55%);
+  }
   .modal-squads { flex-direction: column; }
   .modal-divider { width: auto; height: 1px; }
   .modal-squad-col { padding: 16px; }

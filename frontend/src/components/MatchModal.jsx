@@ -101,11 +101,11 @@ export default function MatchModal({ match, league, onClose }) {
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal" onClick={e => e.stopPropagation()}>
+      <div className="modal" style={heroStyle} onClick={e => e.stopPropagation()}>
 
         <button className="modal-close" onClick={onClose} aria-label="Close">✕</button>
 
-        <div className="modal-header" style={heroStyle}>
+        <div className="modal-header">
           <div className="modal-team">
             {homeTeam.crest && <img src={homeTeam.crest} alt={homeTeam.name} className="modal-crest" />}
             <span className="modal-team-name">{homeTeam.name}</span>
@@ -151,7 +151,7 @@ export default function MatchModal({ match, league, onClose }) {
             <Squad teamData={homeTeamData} loading={loading} />
           </div>
           <div className="modal-divider" />
-          <div className="modal-squad-col">
+          <div className="modal-squad-col modal-squad-col--away">
             <h3 className="modal-squad-title">{awayTeam.shortName} Squad</h3>
             <Squad teamData={awayTeamData} loading={loading} />
           </div>
