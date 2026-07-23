@@ -74,6 +74,13 @@ function MatchCard({ match, onClick }) {
     '--team-away-color': getTeamColor(awayTeam),
   }
 
+  const homeColor = getTeamColor(homeTeam)
+  const awayColor = getTeamColor(awayTeam)
+  const cardStyle = {
+    ...(homeColor ? { '--home-color': homeColor } : {}),
+    ...(awayColor ? { '--away-color': awayColor } : {}),
+  }
+
   return (
     <div
       className={`match-card ${isLive ? 'match-card--live' : ''} ${isSuspended ? 'match-card--suspended' : ''} ${isFinished ? 'match-card--finished' : ''} ${spoilerHidden ? 'match-card--spoiler' : ''}`}

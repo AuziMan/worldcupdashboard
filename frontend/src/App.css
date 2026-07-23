@@ -123,8 +123,8 @@
 }
 
 .tab-btn--active {
-  color: var(--accent);
-  border-bottom-color: var(--accent);
+  color: var(--league-accent, var(--accent));
+  border-bottom-color: var(--league-accent, var(--accent));
 }
 
 .league-nav {
@@ -192,6 +192,9 @@
 
 /* ── Match Card ─────────────────────────────────── */
 .match-card {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -199,12 +202,29 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  transition: background 0.2s, box-shadow 0.2s;
+  transition: background 0.2s, box-shadow 0.2s, transform 0.15s;
+}
+
+.match-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(100deg, color-mix(in srgb, var(--home-color, transparent) 60%, transparent) 0%, transparent 52%),
+    linear-gradient(280deg, color-mix(in srgb, var(--away-color, transparent) 60%, transparent) 0%, transparent 52%);
+  opacity: 0.9;
+  transition: opacity 0.2s;
+  pointer-events: none;
 }
 
 .match-card:hover {
   background: var(--bg-card-hover);
   box-shadow: var(--shadow);
+}
+
+.match-card:hover::before {
+  opacity: 1;
 }
 
 .match-card--live {
@@ -301,6 +321,15 @@
   height: 44px;
   object-fit: contain;
   filter: drop-shadow(0 1px 3px rgba(0,0,0,0.5));
+  transition: filter 0.2s;
+}
+
+.team-side:first-child .team-crest {
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,0.5)) drop-shadow(0 0 10px color-mix(in srgb, var(--home-color, transparent) 55%, transparent));
+}
+
+.team-side:last-child .team-crest {
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,0.5)) drop-shadow(0 0 10px color-mix(in srgb, var(--away-color, transparent) 55%, transparent));
 }
 
 .team-crest-placeholder {
@@ -476,7 +505,9 @@ tbody td {
   align-items: center;
   gap: 8px;
   text-align: left;
-  padding-left: 10px !important;
+  padding-left: 8px !important;
+  border-left: 3px solid var(--row-accent, transparent);
+  transition: border-color 0.2s;
 }
 
 .table-crest {
@@ -484,6 +515,7 @@ tbody td {
   height: 22px;
   object-fit: contain;
   flex-shrink: 0;
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--row-accent, transparent) 50%, transparent));
 }
 
 .pts {
@@ -556,9 +588,8 @@ tbody td {
 
 .match-card[role="button"]:hover {
   background: var(--bg-card-hover);
-  box-shadow: var(--shadow);
-  transform: translateY(-1px);
-  transition: transform 0.15s, box-shadow 0.15s;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.4);
+  transform: translateY(-3px) scale(1.012);
 }
 
 /* ── Modal ──────────────────────────────────────── */
@@ -583,13 +614,22 @@ tbody td {
   max-height: 90vh;
   overflow-y: auto;
   position: relative;
+  display: flex;
+  flex-direction: column;
   box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.modal::-webkit-scrollbar {
+  display: none;
 }
 
 .modal-close {
   position: sticky;
   top: 12px;
-  float: right;
+  align-self: flex-end;
+  flex-shrink: 0;
   margin: 12px 12px 0 0;
   background: rgba(255,255,255,0.08);
   border: none;
@@ -612,12 +652,28 @@ tbody td {
 }
 
 .modal-header {
+  flex-shrink: 0;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
   padding: 28px 28px 20px;
   border-bottom: 1px solid var(--border);
+  border-radius: 14px 14px 0 0;
+}
+
+.modal-header::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(to right, color-mix(in srgb, var(--home-color, transparent) 30%, transparent) 0%, transparent 55%),
+    linear-gradient(to left, color-mix(in srgb, var(--away-color, transparent) 30%, transparent) 0%, transparent 55%);
+  pointer-events: none;
 }
 
 .modal-team {
@@ -637,6 +693,14 @@ tbody td {
   height: 64px;
   object-fit: contain;
   filter: drop-shadow(0 2px 6px rgba(0,0,0,0.4));
+}
+
+.modal-team .modal-crest {
+  filter: drop-shadow(0 2px 6px rgba(0,0,0,0.4)) drop-shadow(0 0 14px color-mix(in srgb, var(--home-color, transparent) 55%, transparent));
+}
+
+.modal-team--away .modal-crest {
+  filter: drop-shadow(0 2px 6px rgba(0,0,0,0.4)) drop-shadow(0 0 14px color-mix(in srgb, var(--away-color, transparent) 55%, transparent));
 }
 
 .modal-team-name {
@@ -713,6 +777,7 @@ tbody td {
 /* ── Squads ─────────────────────────────────────── */
 .modal-squads {
   display: flex;
+  flex-shrink: 0;
   gap: 0;
   padding: 0;
 }
@@ -721,6 +786,11 @@ tbody td {
   flex: 1;
   padding: 20px 24px 24px;
   min-width: 0;
+  background: color-mix(in srgb, var(--home-color, transparent) 20%, var(--bg-card));
+}
+
+.modal-squad-col--away {
+  background: color-mix(in srgb, var(--away-color, transparent) 20%, var(--bg-card));
 }
 
 .modal-divider {
@@ -899,14 +969,15 @@ tbody td {
   border-radius: 8px;
   padding: 8px 10px;
   cursor: pointer;
-  transition: background 0.15s, box-shadow 0.15s;
+  transition: background 0.15s, box-shadow 0.15s, transform 0.15s;
   position: relative;
   flex-shrink: 0;
 }
 
 .bm:hover {
   background: var(--bg-card-hover);
-  box-shadow: var(--shadow);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+  transform: translateY(-2px);
 }
 
 .bm--live {
@@ -952,6 +1023,14 @@ tbody td {
   height: 20px;
   object-fit: contain;
   flex-shrink: 0;
+}
+
+.bm-row:first-of-type .bm-crest {
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--home-color, transparent) 55%, transparent));
+}
+
+.bm-row:last-of-type .bm-crest {
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--away-color, transparent) 55%, transparent));
 }
 
 .bm-crest--empty {
@@ -1270,6 +1349,11 @@ tbody td {
   .standings-grid { grid-template-columns: 1fr; }
   .tab-btn { padding: 12px 12px 10px; font-size: 0.85rem; }
   .modal-header { flex-direction: column; gap: 16px; }
+  .modal-header::before {
+    background:
+      linear-gradient(to bottom, color-mix(in srgb, var(--home-color, transparent) 30%, transparent) 0%, transparent 55%),
+      linear-gradient(to top, color-mix(in srgb, var(--away-color, transparent) 30%, transparent) 0%, transparent 55%);
+  }
   .modal-squads { flex-direction: column; }
   .modal-divider { width: auto; height: 1px; }
   .modal-squad-col { padding: 16px; }

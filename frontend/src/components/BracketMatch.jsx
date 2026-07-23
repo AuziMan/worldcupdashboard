@@ -33,9 +33,17 @@ function BracketMatch({ match, onClick }) {
   const dateStr = kickoff.toLocaleDateString([], { month: 'short', day: 'numeric' })
   const timeStr = kickoff.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 
+  const homeColor = getTeamColor(homeTeam)
+  const awayColor = getTeamColor(awayTeam)
+  const cardStyle = {
+    ...(homeColor ? { '--home-color': homeColor } : {}),
+    ...(awayColor ? { '--away-color': awayColor } : {}),
+  }
+
   return (
     <div
       className={`bm ${isLive ? 'bm--live' : ''} ${isFinished ? 'bm--finished' : ''}`}
+      style={cardStyle}
       onClick={onClick}
       role="button"
       tabIndex={0}

@@ -95,6 +95,13 @@ export default function MatchModal({ match, league, onClose }) {
   const kickoff = new Date(utcDate)
   const referee = referees?.[0]
 
+  const homeColor = getTeamColor(homeTeam)
+  const awayColor = getTeamColor(awayTeam)
+  const heroStyle = {
+    ...(homeColor ? { '--home-color': homeColor } : {}),
+    ...(awayColor ? { '--away-color': awayColor } : {}),
+  }
+
   return (
     <div className="modal-backdrop" onClick={onClose}>
       <div
@@ -159,7 +166,7 @@ export default function MatchModal({ match, league, onClose }) {
             <Squad teamData={homeTeamData} loading={loading} />
           </div>
           <div className="modal-divider" />
-          <div className="modal-squad-col">
+          <div className="modal-squad-col modal-squad-col--away">
             <h3 className="modal-squad-title">{awayTeam.shortName} Squad</h3>
             <Squad teamData={awayTeamData} loading={loading} />
           </div>
