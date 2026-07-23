@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+import { X } from 'lucide-react'
+import { useSpoilers } from '@/providers/SpoilerProvider'
 
 const API_BASE = import.meta.env.VITE_API_URL || ''
 
@@ -52,6 +54,7 @@ function Squad({ teamData, loading }) {
 }
 
 export default function MatchModal({ match, league, onClose }) {
+  const { isScoreHidden, revealMatch } = useSpoilers()
   const [homeTeamData, setHomeTeamData] = useState(null)
   const [awayTeamData, setAwayTeamData] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -88,14 +91,23 @@ export default function MatchModal({ match, league, onClose }) {
   const hasScore = score?.fullTime?.home != null && score?.fullTime?.away != null
   const showScore = (isLive || isFinished) && hasScore
   const scoreUnavailable = (isLive || isFinished) && !hasScore
+  const spoilerHidden = isScoreHidden(match)
   const kickoff = new Date(utcDate)
   const referee = referees?.[0]
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal" onClick={e => e.stopPropagation()}>
+      <div
+        className="modal"
+        onClick={e => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-label={`${homeTeam.name} versus ${awayTeam.name} match details`}
+      >
 
-        <button className="modal-close" onClick={onClose} aria-label="Close">✕</button>
+        <button className="modal-close" onClick={onClose} aria-label="Close match details">
+          <X aria-hidden="true" />
+        </button>
 
         <div className="modal-header">
           <div className="modal-team">
@@ -104,7 +116,11 @@ export default function MatchModal({ match, league, onClose }) {
           </div>
 
           <div className="modal-score-block">
-            {showScore ? (
+            {spoilerHidden ? (
+              <button className="modal-spoiler-reveal" onClick={() => revealMatch(match.id)}>
+                Reveal score
+              </button>
+            ) : showScore ? (
               <div className="modal-score">
                 <span>{score.fullTime.home}</span>
                 <span className="modal-score-sep">–</span>

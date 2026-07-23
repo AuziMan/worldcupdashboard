@@ -6,7 +6,11 @@ import Standings from './components/Standings'
 import MatchModal from './components/MatchModal'
 import AdminPanel from './components/AdminPanel'
 import BracketView from './components/BracketView'
+import HomePage from './components/HomePage'
+import ComingSoonPage from './components/ComingSoonPage'
+import TeamsView from './components/TeamsView'
 import './App.css'
+import './styles/redesign.css'
 
 const LEAGUES = {
   wc: {
@@ -14,7 +18,7 @@ const LEAGUES = {
     name: 'FIFA World Cup 2026',
     subtitle: 'USA · Canada · Mexico',
     logo: 'https://crests.football-data.org/wm26.png',
-    tabs: ['Matches', 'Standings', 'Bracket'],
+    tabs: ['Matches', 'Teams', 'Standings', 'Bracket'],
     attribution: 'football-data.org',
   },
   epl: {
@@ -22,7 +26,7 @@ const LEAGUES = {
     name: 'Premier League',
     subtitle: 'England',
     logo: 'https://crests.football-data.org/PL.png',
-    tabs: ['Matches', 'Standings'],
+    tabs: ['Matches', 'Teams', 'Standings'],
     attribution: 'football-data.org',
   },
   mls: {
@@ -30,28 +34,18 @@ const LEAGUES = {
     name: 'Major League Soccer',
     subtitle: 'USA · Canada',
     logo: 'https://a.espncdn.com/i/leaguelogos/soccer/500/19.png',
-    tabs: ['Matches', 'Standings'],
+    tabs: ['Matches', 'Teams', 'Standings'],
     attribution: 'ESPN',
   },
 }
 
 const API_BASE = import.meta.env.VITE_API_URL || ''
 
-export default function App() {
+function SoccerDashboard({ onHome }) {
   const [league, setLeague] = useState('wc')
   const [tab, setTab] = useState('Matches')
   const [selectedMatch, setSelectedMatch] = useState(null)
-  const isAdmin = window.location.hash === '#admin'
-
-  useEffect(() => {
-    if (!isAdmin && !sessionStorage.getItem('_wcd_visited')) {
-      fetch(`${API_BASE}/api/analytics/visit`, { method: 'POST' }).catch(() => {})
-      sessionStorage.setItem('_wcd_visited', '1')
-    }
-  }, [isAdmin])
   const { matches, standings, loading, error, lastFetched, isLiveMode, refresh } = useLeagueData(league)
-
-  if (isAdmin) return <AdminPanel />
 
   const activeLeague = LEAGUES[league]
 
@@ -62,7 +56,7 @@ export default function App() {
 
   return (
     <div className="app">
-      <Header league={activeLeague} lastFetched={lastFetched} onRefresh={refresh} loading={loading} />
+      <Header league={activeLeague} lastFetched={lastFetched} onRefresh={refresh} loading={loading} onHome={onHome} />
 
       <nav className="tab-nav league-nav">
         {Object.entries(LEAGUES).map(([key, l]) => (
@@ -70,6 +64,7 @@ export default function App() {
             key={key}
             className={`tab-btn ${league === key ? 'tab-btn--active' : ''}`}
             onClick={() => selectLeague(key)}
+            aria-pressed={league === key}
           >
             {l.label}
           </button>
@@ -82,6 +77,7 @@ export default function App() {
             key={t}
             className={`tab-btn ${tab === t ? 'tab-btn--active' : ''}`}
             onClick={() => setTab(t)}
+            aria-current={tab === t ? 'page' : undefined}
           >
             {t}
           </button>
@@ -111,6 +107,10 @@ export default function App() {
           <Standings standings={standings} matches={matches} highlightTop={league === 'wc'} />
         )}
 
+        {!loading && !error && tab === 'Teams' && (
+          <TeamsView matches={matches} standings={standings} league={league} />
+        )}
+
         {!loading && !error && tab === 'Bracket' && (
           <BracketView matches={matches} onSelectMatch={setSelectedMatch} />
         )}
@@ -128,4 +128,42 @@ export default function App() {
       )}
     </div>
   )
+}
+
+function sportFromHash() {
+  const value = window.location.hash.slice(1)
+  return ['soccer', 'mlb', 'nba'].includes(value) ? value : null
+}
+
+export default function App() {
+  const isAdmin = window.location.hash === '#admin'
+  const [sport, setSport] = useState(sportFromHash)
+
+  useEffect(() => {
+    if (!isAdmin && !sessionStorage.getItem('_wcd_visited')) {
+      fetch(`${API_BASE}/api/analytics/visit`, { method: 'POST' }).catch(() => {})
+      sessionStorage.setItem('_wcd_visited', '1')
+    }
+  }, [isAdmin])
+
+  useEffect(() => {
+    const handleHashChange = () => setSport(sportFromHash())
+    window.addEventListener('hashchange', handleHashChange)
+    return () => window.removeEventListener('hashchange', handleHashChange)
+  }, [])
+
+  function selectSport(nextSport) {
+    setSport(nextSport)
+    window.location.hash = nextSport
+  }
+
+  function goHome() {
+    setSport(null)
+    window.location.hash = 'home'
+  }
+
+  if (isAdmin) return <AdminPanel />
+  if (!sport) return <HomePage onSelectSport={selectSport} />
+  if (sport === 'soccer') return <SoccerDashboard onHome={goHome} />
+  return <ComingSoonPage sport={sport} onHome={goHome} />
 }

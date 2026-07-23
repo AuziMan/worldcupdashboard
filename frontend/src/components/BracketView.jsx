@@ -85,41 +85,54 @@ export default function BracketView({ matches, onSelectMatch }) {
 
   return (
     <div className="bracket-outer">
-      <div className="bracket">
-        {rounds.map((stage, roundIdx) => {
-          const stageMatches = byStage[stage]
-          const isFirst = roundIdx === 0
-          const isLast = roundIdx === rounds.length - 1
+      <header className="bracket-view-header">
+        <div>
+          <span>Tournament path</span>
+          <h1>Knockout bracket</h1>
+        </div>
+        <p>{rounds.length} rounds · Scroll to explore</p>
+      </header>
 
-          const pairs = []
-          for (let i = 0; i < stageMatches.length; i += 2) {
-            pairs.push(stageMatches.slice(i, i + 2))
-          }
+      <div className="bracket-scroll">
+        <div className="bracket">
+          {rounds.map((stage, roundIdx) => {
+            const stageMatches = byStage[stage]
+            const isFirst = roundIdx === 0
+            const isLast = roundIdx === rounds.length - 1
 
-          return (
-            <div
-              key={stage}
-              className={`bracket-round ${isFirst ? 'bracket-round--first' : ''} ${isLast ? 'bracket-round--last' : ''}`}
-            >
-              <div className="bracket-round-label">{STAGE_LABELS[stage]}</div>
-              <div className="bracket-slots">
-                {pairs.map((pair, pairIdx) => (
-                  <div
-                    key={pairIdx}
-                    className={`bracket-pair ${!isLast && pair.length === 2 ? 'bracket-pair--connect' : ''}`}
-                  >
-                    {pair.map(match => (
-                      <div key={match.id} className="bracket-slot">
-                        <BracketMatch match={match} onClick={() => onSelectMatch(match)} />
-                      </div>
-                    ))}
-                    {pair.length === 1 && !isLast && <div className="bracket-slot bracket-slot--empty" />}
-                  </div>
-                ))}
+            const pairs = []
+            for (let i = 0; i < stageMatches.length; i += 2) {
+              pairs.push(stageMatches.slice(i, i + 2))
+            }
+
+            return (
+              <div
+                key={stage}
+                className={`bracket-round ${isFirst ? 'bracket-round--first' : ''} ${isLast ? 'bracket-round--last' : ''}`}
+              >
+                <div className="bracket-round-label">
+                  <span>{String(roundIdx + 1).padStart(2, '0')}</span>
+                  {STAGE_LABELS[stage]}
+                </div>
+                <div className="bracket-slots">
+                  {pairs.map((pair, pairIdx) => (
+                    <div
+                      key={pairIdx}
+                      className={`bracket-pair ${!isLast && pair.length === 2 ? 'bracket-pair--connect' : ''}`}
+                    >
+                      {pair.map(match => (
+                        <div key={match.id} className="bracket-slot">
+                          <BracketMatch match={match} onClick={() => onSelectMatch(match)} />
+                        </div>
+                      ))}
+                      {pair.length === 1 && !isLast && <div className="bracket-slot bracket-slot--empty" />}
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-          )
-        })}
+            )
+          })}
+        </div>
       </div>
 
       {thirdPlace.length > 0 && (

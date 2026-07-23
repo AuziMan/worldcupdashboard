@@ -1,0 +1,152 @@
+/*
+ * World Cup Dashboard design tokens
+ *
+ * Brand primitives are the only values that should change during a rebrand.
+ * Components consume semantic tokens (background, foreground, primary, etc.),
+ * never these raw palette values directly.
+ */
+:root {
+  --ds-palette-ink: #0f0f0f;
+  --ds-palette-charcoal: #1c1c1c;
+  --ds-palette-white: #ffffff;
+  --ds-palette-brand: #0253ba;
+
+  --ds-font-sans: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+  --ds-font-display: var(--ds-font-sans);
+  --ds-font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+
+  --ds-radius-xs: 0.25rem;
+  --ds-radius-sm: 0.5rem;
+  --ds-radius-md: 0.75rem;
+  --ds-radius-lg: 1rem;
+  --ds-radius-xl: 1.5rem;
+  --ds-radius-full: 9999px;
+
+  --ds-shadow-sm: none;
+  --ds-shadow-md: none;
+  --ds-shadow-lg: none;
+
+  --ds-duration-fast: 120ms;
+  --ds-duration-normal: 200ms;
+  --ds-duration-slow: 320ms;
+  --ds-ease-standard: cubic-bezier(0.2, 0, 0, 1);
+
+  --ds-space-page: clamp(1rem, 3vw, 2rem);
+  --ds-content-width: 75rem;
+}
+
+:root,
+[data-theme="light"] {
+  color-scheme: light;
+
+  --ds-color-bg-canvas: var(--ds-palette-white);
+  --ds-color-bg-subtle: color-mix(in srgb, var(--ds-palette-ink) 3%, var(--ds-palette-white));
+  --ds-color-bg-surface: var(--ds-palette-white);
+  --ds-color-bg-elevated: var(--ds-palette-white);
+  --ds-color-bg-inverse: var(--ds-palette-ink);
+
+  --ds-color-text-primary: var(--ds-palette-ink);
+  --ds-color-text-secondary: color-mix(in srgb, var(--ds-palette-ink) 62%, var(--ds-palette-white));
+  --ds-color-text-tertiary: color-mix(in srgb, var(--ds-palette-ink) 44%, var(--ds-palette-white));
+  --ds-color-text-inverse: var(--ds-palette-white);
+
+  --ds-color-border-subtle: color-mix(in srgb, var(--ds-palette-ink) 9%, transparent);
+  --ds-color-border-default: color-mix(in srgb, var(--ds-palette-ink) 16%, transparent);
+  --ds-color-border-strong: color-mix(in srgb, var(--ds-palette-ink) 30%, transparent);
+
+  --ds-color-brand: var(--ds-palette-brand);
+  --ds-color-brand-hover: color-mix(in srgb, var(--ds-palette-brand) 86%, var(--ds-palette-ink));
+  --ds-color-brand-active: color-mix(in srgb, var(--ds-palette-brand) 74%, var(--ds-palette-ink));
+  --ds-color-brand-subtle: color-mix(in srgb, var(--ds-palette-brand) 18%, transparent);
+  --ds-color-on-brand: var(--ds-palette-white);
+
+  --ds-color-focus: color-mix(in srgb, var(--ds-palette-brand) 72%, var(--ds-palette-ink));
+  --ds-color-overlay: rgb(15 15 15 / 0.48);
+  --ds-color-live: var(--ds-palette-brand);
+  --ds-color-warning: #b45309;
+  --ds-color-on-warning: var(--ds-palette-white);
+  --ds-color-danger: #dc2626;
+  --ds-color-on-danger: var(--ds-palette-white);
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --ds-color-bg-canvas: var(--ds-palette-ink);
+  --ds-color-bg-subtle: color-mix(in srgb, var(--ds-palette-charcoal) 82%, var(--ds-palette-ink));
+  --ds-color-bg-surface: var(--ds-palette-charcoal);
+  --ds-color-bg-elevated: color-mix(in srgb, var(--ds-palette-charcoal) 92%, var(--ds-palette-white));
+  --ds-color-bg-inverse: var(--ds-palette-white);
+
+  --ds-color-text-primary: var(--ds-palette-white);
+  --ds-color-text-secondary: color-mix(in srgb, var(--ds-palette-white) 66%, var(--ds-palette-ink));
+  --ds-color-text-tertiary: color-mix(in srgb, var(--ds-palette-white) 46%, var(--ds-palette-ink));
+  --ds-color-text-inverse: var(--ds-palette-ink);
+
+  --ds-color-border-subtle: color-mix(in srgb, var(--ds-palette-white) 8%, transparent);
+  --ds-color-border-default: color-mix(in srgb, var(--ds-palette-white) 14%, transparent);
+  --ds-color-border-strong: color-mix(in srgb, var(--ds-palette-white) 26%, transparent);
+
+  --ds-color-brand: var(--ds-palette-brand);
+  --ds-color-brand-hover: color-mix(in srgb, var(--ds-palette-brand) 84%, var(--ds-palette-white));
+  --ds-color-brand-active: color-mix(in srgb, var(--ds-palette-brand) 72%, var(--ds-palette-white));
+  --ds-color-brand-subtle: color-mix(in srgb, var(--ds-palette-brand) 16%, transparent);
+  --ds-color-on-brand: var(--ds-palette-white);
+
+  --ds-color-focus: var(--ds-palette-brand);
+  --ds-color-overlay: rgb(0 0 0 / 0.72);
+  --ds-color-live: var(--ds-palette-brand);
+  --ds-color-warning: #f59e0b;
+  --ds-color-on-warning: var(--ds-palette-ink);
+  --ds-color-danger: #f87171;
+  --ds-color-on-danger: var(--ds-palette-ink);
+}
+
+@theme inline {
+  --font-sans: var(--ds-font-sans);
+  --font-display: var(--ds-font-display);
+  --font-mono: var(--ds-font-mono);
+
+  --color-background: var(--ds-color-bg-canvas);
+  --color-subtle: var(--ds-color-bg-subtle);
+  --color-surface: var(--ds-color-bg-surface);
+  --color-elevated: var(--ds-color-bg-elevated);
+  --color-inverse: var(--ds-color-bg-inverse);
+  --color-foreground: var(--ds-color-text-primary);
+  --color-muted-foreground: var(--ds-color-text-secondary);
+  --color-subtle-foreground: var(--ds-color-text-tertiary);
+  --color-inverse-foreground: var(--ds-color-text-inverse);
+  --color-border: var(--ds-color-border-default);
+  --color-border-subtle: var(--ds-color-border-subtle);
+  --color-border-strong: var(--ds-color-border-strong);
+  --color-primary: var(--ds-color-brand);
+  --color-primary-hover: var(--ds-color-brand-hover);
+  --color-primary-active: var(--ds-color-brand-active);
+  --color-primary-subtle: var(--ds-color-brand-subtle);
+  --color-primary-foreground: var(--ds-color-on-brand);
+  --color-ring: var(--ds-color-focus);
+  --color-overlay: var(--ds-color-overlay);
+  --color-live: var(--ds-color-live);
+  --color-warning: var(--ds-color-warning);
+  --color-warning-foreground: var(--ds-color-on-warning);
+  --color-danger: var(--ds-color-danger);
+  --color-danger-foreground: var(--ds-color-on-danger);
+
+  --radius-xs: var(--ds-radius-xs);
+  --radius-sm: var(--ds-radius-sm);
+  --radius-md: var(--ds-radius-md);
+  --radius-lg: var(--ds-radius-lg);
+  --radius-xl: var(--ds-radius-xl);
+
+  --shadow-sm: var(--ds-shadow-sm);
+  --shadow-md: var(--ds-shadow-md);
+  --shadow-lg: var(--ds-shadow-lg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --ds-duration-fast: 0ms;
+    --ds-duration-normal: 0ms;
+    --ds-duration-slow: 0ms;
+  }
+}
