@@ -31,8 +31,24 @@ REFRESH_SECRET = os.getenv("REFRESH_SECRET", "")
 REDIS_URL = os.getenv("UPSTASH_REDIS_REST_URL", "")
 REDIS_TOKEN = os.getenv("UPSTASH_REDIS_REST_TOKEN", "")
 FOOTBALL_DATA_BASE_URL = "https://api.football-data.org/v4"
-ESPN_BASE_URL = "https://site.api.espn.com/apis/site/v2/sports/soccer"
-ESPN_STANDINGS_BASE_URL = "https://site.api.espn.com/apis/v2/sports/soccer"
+# Per-sport config for the ESPN provider. "rank_key" is the standings stat name
+# that carries a team's position within its group — it differs by sport (soccer
+# has "rank", basketball has "playoffSeed" instead).
+ESPN_SPORTS = {
+    "soccer": {
+        "base": "https://site.api.espn.com/apis/site/v2/sports/soccer",
+        "standings_base": "https://site.api.espn.com/apis/v2/sports/soccer",
+        "rank_key": "rank",
+    },
+    "basketball": {
+        "base": "https://site.api.espn.com/apis/site/v2/sports/basketball",
+        "standings_base": "https://site.api.espn.com/apis/v2/sports/basketball",
+        "rank_key": "playoffSeed",
+    },
+}
+MLB_STATS_BASE_URL = "https://statsapi.mlb.com/api/v1"
+MLB_LOGO_BASE_URL = "https://www.mlbstatic.com/team-logos"
+MLB_HEADSHOT_BASE_URL = "https://img.mlbstatic.com/mlb-photos/image/upload/w_213,d_people:generic:headshot:silo:current.png,q_auto:best,f_auto/v1/people"
 CACHE_TTL_DEFAULT = timedelta(seconds=60)
 CACHE_TTL_LIVE = timedelta(seconds=60)
 
@@ -40,10 +56,18 @@ CACHE_TTL_LIVE = timedelta(seconds=60)
 # football-data.org (our key already covers both at the same TIER_ONE plan).
 # football-data.org doesn't offer MLS at any tier, so "mls" is served by
 # ESPN's undocumented site API instead, normalized into the same shape below.
+# "mlb" is served by MLB's own undocumented statsapi.mlb.com (no key needed) —
+# it isn't wired into the frontend's league switcher (App.jsx) yet, so it's
+# reachable via the API but not shown in the UI. "nba" also reuses the ESPN
+# provider (basketball is a second sport family on the same site API) rather
+# than a new provider module — the official stats.nba.com API was rejected
+# because it blocks datacenter/cloud IPs, which would break on Render.
 LEAGUES = {
     "wc": {"provider": "football-data", "code": "WC"},
     "epl": {"provider": "football-data", "code": "PL"},
-    "mls": {"provider": "espn", "code": "usa.1"},
+    "mls": {"provider": "espn", "sport": "soccer", "code": "usa.1"},
+    "mlb": {"provider": "mlbstats", "code": "1"},
+    "nba": {"provider": "espn", "sport": "basketball", "code": "nba"},
 }
 
 _cache: dict = {}
@@ -133,11 +157,12 @@ def _espn_minute(status: dict) -> int | None:
     return int(clock) if clock.isdigit() else None
 
 
-def _espn_matches(code: str) -> dict:
+def _espn_matches(sport: str, code: str) -> dict:
+    cfg = ESPN_SPORTS[sport]
     now = datetime.now(timezone.utc)
     start = (now - timedelta(days=45)).strftime("%Y%m%d")
     end = (now + timedelta(days=45)).strftime("%Y%m%d")
-    data = _espn_get(f"{ESPN_BASE_URL}/{code}/scoreboard?dates={start}-{end}")
+    data = _espn_get(f"{cfg['base']}/{code}/scoreboard?dates={start}-{end}")
 
     matches = []
     for event in data.get("events", []):
@@ -175,25 +200,31 @@ def _espn_matches(code: str) -> dict:
     return {"matches": matches}
 
 
-def _espn_standings(code: str) -> dict:
-    data = _espn_get(f"{ESPN_STANDINGS_BASE_URL}/{code}/standings")
+def _espn_standings(sport: str, code: str) -> dict:
+    cfg = ESPN_SPORTS[sport]
+    data = _espn_get(f"{cfg['standings_base']}/{code}/standings")
 
     groups = []
     for child in data.get("children", []):
         table = []
         for entry in child.get("standings", {}).get("entries", []):
             stats = {s.get("name"): s.get("value") for s in entry.get("stats", [])}
+            wins = int(stats.get("wins", 0))
+            losses = int(stats.get("losses", 0))
+            # Some sports (basketball) don't have a "points" stat that means
+            # anything standard — wins is the closest sortable/displayable analog.
+            points = wins if sport == "basketball" else int(stats.get("points", 0))
             table.append({
-                "position": int(stats.get("rank", 0)),
+                "position": int(stats.get(cfg["rank_key"], 0)),
                 "team": _espn_team(entry.get("team", {})),
-                "playedGames": int(stats.get("gamesPlayed", 0)),
-                "won": int(stats.get("wins", 0)),
+                "playedGames": int(stats.get("gamesPlayed") or (wins + losses)),
+                "won": wins,
                 "draw": int(stats.get("ties", 0)),
-                "lost": int(stats.get("losses", 0)),
+                "lost": losses,
                 "goalsFor": int(stats.get("pointsFor", 0)),
                 "goalsAgainst": int(stats.get("pointsAgainst", 0)),
                 "goalDifference": int(stats.get("pointDifferential", 0)),
-                "points": int(stats.get("points", 0)),
+                "points": points,
             })
         table.sort(key=lambda row: row["position"])
         groups.append({"group": child.get("name"), "table": table})
@@ -201,16 +232,18 @@ def _espn_standings(code: str) -> dict:
     return {"standings": groups}
 
 
-def _espn_teams(code: str) -> dict:
-    data = _espn_get(f"{ESPN_BASE_URL}/{code}/teams")
+def _espn_teams(sport: str, code: str) -> dict:
+    cfg = ESPN_SPORTS[sport]
+    data = _espn_get(f"{cfg['base']}/{code}/teams")
     sports = data.get("sports") or [{}]
     leagues = sports[0].get("leagues") or [{}]
     teams = [_espn_team(t.get("team", {})) for t in leagues[0].get("teams", [])]
     return {"teams": teams}
 
 
-def _espn_team_detail(code: str, team_id) -> dict:
-    data = _espn_get(f"{ESPN_BASE_URL}/{code}/teams/{team_id}/roster")
+def _espn_team_detail(sport: str, code: str, team_id) -> dict:
+    cfg = ESPN_SPORTS[sport]
+    data = _espn_get(f"{cfg['base']}/{code}/teams/{team_id}/roster")
     squad = []
     for athlete in data.get("athletes", []):
         position = (athlete.get("position") or {}).get("displayName")
@@ -252,6 +285,164 @@ def _espn_team_detail(code: str, team_id) -> dict:
     return {"coach": None, "squad": squad}
 
 
+# ───────────────────────────── MLB Stats API provider ─────────────────────────────
+# Undocumented endpoints that power MLB.com and the MLB app. No auth, no published
+# rate limit. Unlike ESPN's soccer scoreboard/standings, the schedule and standings
+# responses only embed bare {id, name} team stubs (no crest/abbreviation), so matches
+# and standings each need one extra call to /teams to resolve display info.
+
+MLB_STATUS_MAP = {
+    "Scheduled": "SCHEDULED",
+    "Pre-Game": "SCHEDULED",
+    "Warmup": "SCHEDULED",
+    "In Progress": "IN_PLAY",
+    "Manager Challenge": "IN_PLAY",
+    "Instant Replay": "IN_PLAY",
+    "Umpire Review": "IN_PLAY",
+    "Delayed Start": "SCHEDULED",
+    "Delayed": "SUSPENDED",
+    "Suspended": "SUSPENDED",
+    "Postponed": "POSTPONED",
+    "Cancelled": "CANCELLED",
+    "Final": "FINISHED",
+    "Game Over": "FINISHED",
+    "Completed Early": "FINISHED",
+}
+
+MLB_ABSTRACT_STATUS_MAP = {
+    "Preview": "SCHEDULED",
+    "Live": "IN_PLAY",
+    "Final": "FINISHED",
+}
+
+# Postseason gameType codes only — regular season/spring/all-star games get no stage.
+MLB_GAME_TYPE_STAGE = {
+    "F": "WILD_CARD",
+    "D": "DIVISION_SERIES",
+    "L": "LEAGUE_CHAMPIONSHIP",
+    "W": "WORLD_SERIES",
+}
+
+
+def _mlbstats_get(path: str) -> dict:
+    r = requests.get(f"{MLB_STATS_BASE_URL}{path}", timeout=10)
+    r.raise_for_status()
+    return r.json()
+
+
+def _mlbstats_team(team_json: dict) -> dict:
+    team_id = team_json.get("id")
+    return {
+        "id": team_id,
+        "name": team_json.get("name"),
+        "shortName": team_json.get("teamName") or team_json.get("name"),
+        "crest": f"{MLB_LOGO_BASE_URL}/{team_id}.svg" if team_id else None,
+    }
+
+
+def _mlbstats_team_lookup(sport_id: str) -> dict:
+    data = _mlbstats_get(f"/teams?sportId={sport_id}")
+    return {t["id"]: _mlbstats_team(t) for t in data.get("teams", []) if t.get("id")}
+
+
+def _mlbstats_status(status_json: dict) -> str:
+    detailed = status_json.get("detailedState")
+    if detailed in MLB_STATUS_MAP:
+        return MLB_STATUS_MAP[detailed]
+    return MLB_ABSTRACT_STATUS_MAP.get(status_json.get("abstractGameState"), "SCHEDULED")
+
+
+def _mlbstats_matches(sport_id: str) -> dict:
+    now = datetime.now(timezone.utc)
+    start = (now - timedelta(days=45)).strftime("%Y-%m-%d")
+    end = (now + timedelta(days=45)).strftime("%Y-%m-%d")
+    data = _mlbstats_get(f"/schedule?sportId={sport_id}&startDate={start}&endDate={end}&hydrate=linescore")
+    team_lookup = _mlbstats_team_lookup(sport_id)
+
+    matches = []
+    for date_entry in data.get("dates", []):
+        for game in date_entry.get("games", []):
+            teams = game.get("teams", {})
+            home = teams.get("home", {})
+            away = teams.get("away", {})
+
+            def resolve_team(side):
+                stub = side.get("team", {})
+                return team_lookup.get(stub.get("id")) or {
+                    "id": stub.get("id"), "name": stub.get("name"), "shortName": stub.get("name"), "crest": None,
+                }
+
+            # Baseball has no minute-count equivalent — innings aren't a fixed
+            # duration, so "minute" is left unset rather than approximated.
+            matches.append({
+                "id": game.get("gamePk"),
+                "utcDate": game.get("gameDate"),
+                "status": _mlbstats_status(game.get("status", {})),
+                "minute": None,
+                "stage": MLB_GAME_TYPE_STAGE.get(game.get("gameType")),
+                "group": None,
+                "homeTeam": resolve_team(home),
+                "awayTeam": resolve_team(away),
+                "score": {"fullTime": {"home": home.get("score"), "away": away.get("score")}},
+            })
+
+    return {"matches": matches}
+
+
+def _mlbstats_standings(sport_id: str) -> dict:
+    year = datetime.now(timezone.utc).year
+    data = _mlbstats_get(f"/standings?leagueId=103,104&season={year}&hydrate=division")
+    team_lookup = _mlbstats_team_lookup(sport_id)
+
+    groups = []
+    for record in data.get("records", []):
+        table = []
+        for entry in record.get("teamRecords", []):
+            team_stub = entry.get("team", {})
+            team = team_lookup.get(team_stub.get("id")) or {
+                "id": team_stub.get("id"), "name": team_stub.get("name"), "shortName": team_stub.get("name"), "crest": None,
+            }
+            # Baseball has no "points" stat — wins is the closest sortable/displayable analog.
+            table.append({
+                "position": int(entry.get("divisionRank", 0)),
+                "team": team,
+                "playedGames": entry.get("gamesPlayed", 0),
+                "won": entry.get("wins", 0),
+                "draw": (entry.get("leagueRecord") or {}).get("ties", 0),
+                "lost": entry.get("losses", 0),
+                "goalsFor": entry.get("runsScored", 0),
+                "goalsAgainst": entry.get("runsAllowed", 0),
+                "goalDifference": entry.get("runDifferential", 0),
+                "points": entry.get("wins", 0),
+            })
+        table.sort(key=lambda row: row["position"])
+        division = record.get("division") or {}
+        groups.append({"group": division.get("nameShort") or division.get("name"), "table": table})
+
+    return {"standings": groups}
+
+
+def _mlbstats_teams(sport_id: str) -> dict:
+    data = _mlbstats_get(f"/teams?sportId={sport_id}")
+    return {"teams": [_mlbstats_team(t) for t in data.get("teams", [])]}
+
+
+def _mlbstats_team_detail(sport_id: str, team_id) -> dict:
+    data = _mlbstats_get(f"/teams/{team_id}/roster")
+    squad = []
+    for entry in data.get("roster", []):
+        person = entry.get("person", {})
+        person_id = person.get("id")
+        squad.append({
+            "id": person_id,
+            "name": person.get("fullName"),
+            "position": (entry.get("position") or {}).get("type"),
+            "photo": f"{MLB_HEADSHOT_BASE_URL}/{person_id}/headshot/67/current" if person_id else None,
+            "jersey": entry.get("jerseyNumber"),
+        })
+    return {"coach": None, "squad": squad}
+
+
 # ────────────────────────────────── dispatch ──────────────────────────────────
 
 def _league_config(league: str) -> dict:
@@ -264,28 +455,36 @@ def _league_config(league: str) -> dict:
 def _fetch_matches(league: str) -> dict:
     config = _league_config(league)
     if config["provider"] == "espn":
-        return _espn_matches(config["code"])
+        return _espn_matches(config["sport"], config["code"])
+    if config["provider"] == "mlbstats":
+        return _mlbstats_matches(config["code"])
     return _fd_matches(config["code"])
 
 
 def _fetch_standings(league: str) -> dict:
     config = _league_config(league)
     if config["provider"] == "espn":
-        return _espn_standings(config["code"])
+        return _espn_standings(config["sport"], config["code"])
+    if config["provider"] == "mlbstats":
+        return _mlbstats_standings(config["code"])
     return _fd_standings(config["code"])
 
 
 def _fetch_teams(league: str) -> dict:
     config = _league_config(league)
     if config["provider"] == "espn":
-        return _espn_teams(config["code"])
+        return _espn_teams(config["sport"], config["code"])
+    if config["provider"] == "mlbstats":
+        return _mlbstats_teams(config["code"])
     return _fd_teams(config["code"])
 
 
 def _fetch_team_detail(league: str, team_id) -> dict:
     config = _league_config(league)
     if config["provider"] == "espn":
-        return _espn_team_detail(config["code"], team_id)
+        return _espn_team_detail(config["sport"], config["code"], team_id)
+    if config["provider"] == "mlbstats":
+        return _mlbstats_team_detail(config["code"], team_id)
     return _fd_team_detail(config["code"], team_id)
 
 
