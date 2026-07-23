@@ -1,5 +1,6 @@
 import { memo } from 'react'
-import { getTeamColor } from '../data/teamColors'
+import { getTeamColor } from '@/lib/teamColors'
+import { useSpoilers } from '@/providers/SpoilerProvider'
 
 const STATUS_LABELS = {
   SCHEDULED: 'Upcoming',
@@ -36,6 +37,7 @@ function TeamSide({ team, isWinner }) {
 }
 
 function MatchCard({ match, onClick }) {
+  const { isScoreHidden, revealMatch } = useSpoilers()
   const { homeTeam, awayTeam, score, status, utcDate, stage, group, minute } = match
 
   const kickoff = new Date(utcDate)
@@ -66,6 +68,11 @@ function MatchCard({ match, onClick }) {
 
   const statusLabel = STATUS_LABELS[status] || status
   const countdown = isPending ? formatCountdown(kickoff) : null
+  const spoilerHidden = isScoreHidden(match)
+  const teamGradient = {
+    '--team-home-color': getTeamColor(homeTeam),
+    '--team-away-color': getTeamColor(awayTeam),
+  }
 
   const homeColor = getTeamColor(homeTeam)
   const awayColor = getTeamColor(awayTeam)
@@ -76,12 +83,17 @@ function MatchCard({ match, onClick }) {
 
   return (
     <div
-      className={`match-card ${isLive ? 'match-card--live' : ''} ${isSuspended ? 'match-card--suspended' : ''} ${isFinished ? 'match-card--finished' : ''}`}
-      style={cardStyle}
+      className={`match-card ${isLive ? 'match-card--live' : ''} ${isSuspended ? 'match-card--suspended' : ''} ${isFinished ? 'match-card--finished' : ''} ${spoilerHidden ? 'match-card--spoiler' : ''}`}
+      style={teamGradient}
       onClick={onClick}
       role="button"
       tabIndex={0}
-      onKeyDown={e => e.key === 'Enter' && onClick?.()}
+      onKeyDown={e => {
+        if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) {
+          e.preventDefault()
+          onClick?.()
+        }
+      }}
     >
       <div className="match-meta">
         <span className={`match-status match-status--${status?.toLowerCase()}`}>{statusLabel}</span>
@@ -89,9 +101,21 @@ function MatchCard({ match, onClick }) {
       </div>
 
       <div className="match-teams">
-        <TeamSide team={homeTeam} isWinner={isFinished && homeWins} />
+        <TeamSide team={homeTeam} isWinner={isFinished && !spoilerHidden && homeWins} />
         <div className="match-vs">
-          {hasScore
+          {spoilerHidden
+            ? (
+              <button
+                className="spoiler-reveal"
+                onClick={event => {
+                  event.stopPropagation()
+                  revealMatch(match.id)
+                }}
+              >
+                Reveal score
+              </button>
+            )
+            : hasScore
             ? <span className="match-score">{homeScore}<span className="match-score-sep"> – </span>{awayScore}</span>
             : scoreUnavailable
               ? <span className="match-score-unavailable">{isLive ? 'Active' : 'Score unavailable'}</span>
@@ -100,7 +124,7 @@ function MatchCard({ match, onClick }) {
                 : kickoff.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
           }
         </div>
-        <TeamSide team={awayTeam} isWinner={isFinished && awayWins} />
+        <TeamSide team={awayTeam} isWinner={isFinished && !spoilerHidden && awayWins} />
       </div>
 
       {progressPct !== null && (

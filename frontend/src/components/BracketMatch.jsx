@@ -14,13 +14,15 @@ function TeamRow({ team, score, isWinner }) {
 }
 
 import { memo } from 'react'
-import { getTeamColor } from '../data/teamColors'
+import { useSpoilers } from '@/providers/SpoilerProvider'
 
 function BracketMatch({ match, onClick }) {
+  const { isScoreHidden, revealMatch } = useSpoilers()
   const { homeTeam, awayTeam, score, status, utcDate } = match
   const isLive = status === 'IN_PLAY' || status === 'LIVE' || status === 'PAUSED'
   const isFinished = status === 'FINISHED' || status === 'AWARDED'
-  const showScore = isLive || isFinished
+  const spoilerHidden = isScoreHidden(match)
+  const showScore = (isLive || isFinished) && !spoilerHidden
 
   const homeScore = showScore ? (score?.fullTime?.home ?? null) : null
   const awayScore = showScore ? (score?.fullTime?.away ?? null) : null
@@ -45,13 +47,28 @@ function BracketMatch({ match, onClick }) {
       onClick={onClick}
       role="button"
       tabIndex={0}
-      onKeyDown={e => e.key === 'Enter' && onClick?.()}
+      onKeyDown={e => {
+        if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) {
+          e.preventDefault()
+          onClick?.()
+        }
+      }}
     >
       {isLive && <div className="bm-live-badge">LIVE</div>}
-      <TeamRow team={homeTeam} score={homeScore} isWinner={homeWins} />
+      <TeamRow team={homeTeam} score={homeScore} isWinner={!spoilerHidden && homeWins} />
       <div className="bm-divider" />
-      <TeamRow team={awayTeam} score={awayScore} isWinner={awayWins} />
-      {!showScore && (
+      <TeamRow team={awayTeam} score={awayScore} isWinner={!spoilerHidden && awayWins} />
+      {spoilerHidden ? (
+        <button
+          className="bm-spoiler-reveal"
+          onClick={event => {
+            event.stopPropagation()
+            revealMatch(match.id)
+          }}
+        >
+          Reveal score
+        </button>
+      ) : !showScore && (
         <div className="bm-kickoff">{dateStr} · {timeStr}</div>
       )}
     </div>
