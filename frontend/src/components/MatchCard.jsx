@@ -36,7 +36,7 @@ function TeamSide({ team, isWinner }) {
   )
 }
 
-function MatchCard({ match, onClick }) {
+function MatchCard({ match, onClick, showProgress = true }) {
   const { isScoreHidden, revealMatch } = useSpoilers()
   const { homeTeam, awayTeam, score, status, utcDate, stage, group, minute } = match
 
@@ -62,7 +62,7 @@ function MatchCard({ match, onClick }) {
   const elapsedMinutes = isLive
     ? (minute ?? Math.round((Date.now() - kickoff) / 60000))
     : null
-  const progressPct = (status === 'IN_PLAY' || status === 'LIVE') && elapsedMinutes != null
+  const progressPct = showProgress && (status === 'IN_PLAY' || status === 'LIVE') && elapsedMinutes != null
     ? Math.min((elapsedMinutes / 115) * 100, 100)
     : null
 

@@ -48,6 +48,7 @@ ESPN_SPORTS = {
 }
 MLB_STATS_BASE_URL = "https://statsapi.mlb.com/api/v1"
 MLB_LOGO_BASE_URL = "https://www.mlbstatic.com/team-logos"
+MLB_HEADSHOT_BASE_URL = "https://img.mlbstatic.com/mlb-photos/image/upload/w_213,d_people:generic:headshot:silo:current.png,q_auto:best,f_auto/v1/people"
 CACHE_TTL_DEFAULT = timedelta(seconds=60)
 CACHE_TTL_LIVE = timedelta(seconds=60)
 
@@ -431,10 +432,13 @@ def _mlbstats_team_detail(sport_id: str, team_id) -> dict:
     squad = []
     for entry in data.get("roster", []):
         person = entry.get("person", {})
+        person_id = person.get("id")
         squad.append({
-            "id": person.get("id"),
+            "id": person_id,
             "name": person.get("fullName"),
             "position": (entry.get("position") or {}).get("type"),
+            "photo": f"{MLB_HEADSHOT_BASE_URL}/{person_id}/headshot/67/current" if person_id else None,
+            "jersey": entry.get("jerseyNumber"),
         })
     return {"coach": None, "squad": squad}
 
