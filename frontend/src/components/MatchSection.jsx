@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Search, X } from 'lucide-react'
 import MatchCard from './MatchCard'
 
 const todayLabel = new Date().toLocaleDateString([], {
@@ -59,15 +60,19 @@ export default function MatchSection({ matches, onSelectMatch }) {
   return (
     <div className="match-section">
       <div className="match-filter">
+        <Search className="match-filter-icon" aria-hidden="true" />
         <input
           className="match-filter-input"
           type="text"
-          placeholder="Filter by team…"
+          placeholder="Find a team"
+          aria-label="Find a team"
           value={query}
           onChange={e => setQuery(e.target.value)}
         />
         {query && (
-          <button className="match-filter-clear" onClick={() => setQuery('')} aria-label="Clear filter">✕</button>
+          <button className="match-filter-clear" onClick={() => setQuery('')} aria-label="Clear filter">
+            <X aria-hidden="true" />
+          </button>
         )}
       </div>
 

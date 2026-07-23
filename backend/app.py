@@ -246,10 +246,40 @@ def _espn_team_detail(sport: str, code: str, team_id) -> dict:
     squad = []
     for athlete in data.get("athletes", []):
         position = (athlete.get("position") or {}).get("displayName")
+        stat_values = {}
+        categories = (
+            athlete.get("statistics", {})
+            .get("splits", {})
+            .get("categories", [])
+        )
+        for category in categories:
+            for stat in category.get("stats", []):
+                stat_values[stat.get("name")] = stat.get("displayValue")
+
+        selected_stats = {}
+        for key, label in [
+            ("appearances", "Apps"),
+            ("totalGoals", "Goals"),
+            ("goalAssists", "Assists"),
+            ("saves", "Saves"),
+            ("goalsConceded", "Goals against"),
+            ("yellowCards", "Yellow cards"),
+        ]:
+            if stat_values.get(key) is not None:
+                selected_stats[label] = stat_values[key]
+
         squad.append({
             "id": athlete.get("id"),
             "name": athlete.get("displayName"),
             "position": ESPN_POSITION_MAP.get(position, position),
+            "photo": (athlete.get("headshot") or {}).get("href"),
+            "jersey": athlete.get("jersey"),
+            "age": athlete.get("age"),
+            "dateOfBirth": athlete.get("dateOfBirth"),
+            "nationality": athlete.get("citizenship"),
+            "height": athlete.get("displayHeight"),
+            "weight": athlete.get("displayWeight"),
+            "stats": selected_stats,
         })
     return {"coach": None, "squad": squad}
 

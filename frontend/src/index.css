@@ -1,3 +1,6 @@
+@import "tailwindcss";
+@import "./styles/tokens.css";
+
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
@@ -5,19 +8,19 @@
 }
 
 :root {
-  --bg: #0d1117;
-  --bg-card: #161b22;
-  --bg-card-hover: #1c2230;
-  --border: #30363d;
-  --text-primary: #e6edf3;
-  --text-secondary: #8b949e;
-  --accent: #2563eb;
-  --accent-dark: #1d4ed8;
-  --live: #3fb950;
-  --live-glow: rgba(63, 185, 80, 0.25);
-  --qualify: rgba(37, 99, 235, 0.08);
-  --radius: 10px;
-  --shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+  --bg: var(--ds-color-bg-canvas);
+  --bg-card: var(--ds-color-bg-surface);
+  --bg-card-hover: var(--ds-color-bg-elevated);
+  --border: var(--ds-color-border-default);
+  --text-primary: var(--ds-color-text-primary);
+  --text-secondary: var(--ds-color-text-secondary);
+  --accent: var(--ds-color-brand);
+  --accent-dark: var(--ds-color-brand-hover);
+  --live: var(--ds-color-live);
+  --live-glow: var(--ds-color-brand-subtle);
+  --qualify: var(--ds-color-brand-subtle);
+  --radius: var(--ds-radius-md);
+  --shadow: none;
 }
 
 html, body, #root {
