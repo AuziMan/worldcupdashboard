@@ -315,6 +315,13 @@ MLB_ABSTRACT_STATUS_MAP = {
     "Final": "FINISHED",
 }
 
+MLB_INNING_STATE_LABELS = {
+    "Top": "Top",
+    "Bottom": "Bot",
+    "Middle": "Mid",
+    "End": "End",
+}
+
 # Postseason gameType codes only — regular season/spring/all-star games get no stage.
 MLB_GAME_TYPE_STAGE = {
     "F": "WILD_CARD",
@@ -352,6 +359,14 @@ def _mlbstats_status(status_json: dict) -> str:
     return MLB_ABSTRACT_STATUS_MAP.get(status_json.get("abstractGameState"), "SCHEDULED")
 
 
+def _mlbstats_period(linescore: dict) -> str | None:
+    ordinal = linescore.get("currentInningOrdinal")
+    if not ordinal:
+        return None
+    label = MLB_INNING_STATE_LABELS.get(linescore.get("inningState"))
+    return f"{label} {ordinal}" if label else ordinal
+
+
 def _mlbstats_matches(sport_id: str) -> dict:
     now = datetime.now(timezone.utc)
     start = (now - timedelta(days=45)).strftime("%Y-%m-%d")
@@ -374,11 +389,13 @@ def _mlbstats_matches(sport_id: str) -> dict:
 
             # Baseball has no minute-count equivalent — innings aren't a fixed
             # duration, so "minute" is left unset rather than approximated.
+            # "period" carries the inning (e.g. "Top 5th") instead.
             matches.append({
                 "id": game.get("gamePk"),
                 "utcDate": game.get("gameDate"),
                 "status": _mlbstats_status(game.get("status", {})),
                 "minute": None,
+                "period": _mlbstats_period(game.get("linescore") or {}),
                 "stage": MLB_GAME_TYPE_STAGE.get(game.get("gameType")),
                 "group": None,
                 "homeTeam": resolve_team(home),
