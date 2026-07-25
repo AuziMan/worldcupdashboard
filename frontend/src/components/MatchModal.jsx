@@ -90,7 +90,7 @@ export default function MatchModal({ match, league, onClose }) {
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
 
-  const { homeTeam, awayTeam, score, status, utcDate, group, stage, referees } = match
+  const { homeTeam, awayTeam, score, status, utcDate, group, stage, referees, period } = match
   const isLive = status === 'IN_PLAY' || status === 'PAUSED'
   const isFinished = status === 'FINISHED'
   const hasScore = score?.fullTime?.home != null && score?.fullTime?.away != null
@@ -149,6 +149,7 @@ export default function MatchModal({ match, league, onClose }) {
               <span className={`modal-badge ${isLive ? 'modal-badge--live' : ''}`}>
                 {status === 'IN_PLAY' ? 'Live' : status === 'PAUSED' ? 'Half Time' : status === 'FINISHED' ? 'Final' : 'Upcoming'}
               </span>
+              {isLive && period && <span className="modal-badge modal-badge--live">{period}</span>}
             </div>
             <div className="modal-meta-row">
               {group && <span>{group.replace('GROUP_', 'Group ')}</span>}

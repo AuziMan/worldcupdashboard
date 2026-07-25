@@ -38,7 +38,7 @@ function TeamSide({ team, isWinner }) {
 
 function MatchCard({ match, onClick, showProgress = true }) {
   const { isScoreHidden, revealMatch } = useSpoilers()
-  const { homeTeam, awayTeam, score, status, utcDate, stage, group, minute } = match
+  const { homeTeam, awayTeam, score, status, utcDate, stage, group, minute, period } = match
 
   const kickoff = new Date(utcDate)
   const isLive = status === 'IN_PLAY' || status === 'LIVE' || status === 'PAUSED'
@@ -97,6 +97,7 @@ function MatchCard({ match, onClick, showProgress = true }) {
     >
       <div className="match-meta">
         <span className={`match-status match-status--${status?.toLowerCase()}`}>{statusLabel}</span>
+        {isLive && period && <span className="match-minute">{period}</span>}
         {group && <span className="match-group">{group.replace('GROUP_', 'Group ')}</span>}
       </div>
 
