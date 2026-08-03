@@ -6,12 +6,12 @@ export const SPORTS = {
   },
   mlb: {
     label: 'MLB',
-    detail: 'Coming soon',
+    detail: 'Live now',
     logo: 'https://a.espncdn.com/i/teamlogos/leagues/500/mlb.png',
   },
   nba: {
     label: 'NBA',
-    detail: 'Coming soon',
+    detail: 'Live now',
     logo: 'https://a.espncdn.com/i/teamlogos/leagues/500/nba.png',
   },
 }

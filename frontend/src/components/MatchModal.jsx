@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { X } from 'lucide-react'
 import { useSpoilers } from '@/providers/SpoilerProvider'
+import { getTeamColor } from '@/lib/teamColors'
 
 const API_BASE = import.meta.env.VITE_API_URL || ''
 
@@ -28,6 +29,10 @@ function Squad({ teamData, loading }) {
 
   const { coach, squad = [] } = teamData
   const groups = groupByPosition(squad)
+  const positions = [
+    ...POSITION_ORDER.filter(pos => groups[pos]),
+    ...Object.keys(groups).filter(pos => !POSITION_ORDER.includes(pos)),
+  ]
 
   return (
     <div className="squad">
@@ -37,7 +42,7 @@ function Squad({ teamData, loading }) {
           <span className="squad-coach-name">{coach.name}</span>
         </div>
       )}
-      {POSITION_ORDER.filter(pos => groups[pos]).map(pos => (
+      {positions.map(pos => (
         <div key={pos} className="squad-group">
           <h4 className="squad-position-label">{POSITION_LABELS[pos] || pos}</h4>
           <ul className="squad-list">
@@ -85,7 +90,7 @@ export default function MatchModal({ match, league, onClose }) {
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
 
-  const { homeTeam, awayTeam, score, status, utcDate, group, stage, referees } = match
+  const { homeTeam, awayTeam, score, status, utcDate, group, stage, referees, period } = match
   const isLive = status === 'IN_PLAY' || status === 'PAUSED'
   const isFinished = status === 'FINISHED'
   const hasScore = score?.fullTime?.home != null && score?.fullTime?.away != null
@@ -144,6 +149,7 @@ export default function MatchModal({ match, league, onClose }) {
               <span className={`modal-badge ${isLive ? 'modal-badge--live' : ''}`}>
                 {status === 'IN_PLAY' ? 'Live' : status === 'PAUSED' ? 'Half Time' : status === 'FINISHED' ? 'Final' : 'Upcoming'}
               </span>
+              {isLive && period && <span className="modal-badge modal-badge--live">{period}</span>}
             </div>
             <div className="modal-meta-row">
               {group && <span>{group.replace('GROUP_', 'Group ')}</span>}

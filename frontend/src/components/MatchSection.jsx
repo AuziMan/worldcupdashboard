@@ -29,7 +29,7 @@ function matchesTeam(m, query) {
   )
 }
 
-export default function MatchSection({ matches, onSelectMatch }) {
+export default function MatchSection({ matches, onSelectMatch, showProgress = true }) {
   const [query, setQuery] = useState('')
 
   if (!matches?.matches?.length) {
@@ -114,7 +114,7 @@ export default function MatchSection({ matches, onSelectMatch }) {
             <div key={date}>
               <h3 className={`date-divider${date === todayLabel ? ' date-divider--today' : ''}`}>{date}</h3>
               <div className="match-grid">
-                {dayMatches.map(m => <MatchCard key={m.id} match={m} onClick={() => onSelectMatch(m)} />)}
+                {dayMatches.map(m => <MatchCard key={m.id} match={m} onClick={() => onSelectMatch(m)} showProgress={showProgress} />)}
               </div>
             </div>
           ))}
@@ -125,7 +125,7 @@ export default function MatchSection({ matches, onSelectMatch }) {
         <section>
           <h2 className="section-title">Recent Results</h2>
           <div className="match-grid">
-            {recent.map(m => <MatchCard key={m.id} match={m} onClick={() => onSelectMatch(m)} />)}
+            {recent.map(m => <MatchCard key={m.id} match={m} onClick={() => onSelectMatch(m)} showProgress={showProgress} />)}
           </div>
         </section>
       )}
