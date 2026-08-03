@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="190 482 665 450" role="img" aria-labelledby="title">
+  <title id="title">GAMEFOLD</title>
+  <defs>
+    <filter id="extract-white" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+      <feColorMatrix values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  .2126 .7152 .0722 0 0" />
+      <feComponentTransfer><feFuncA type="linear" slope="100" intercept="-99" /></feComponentTransfer>
+    </filter>
+  </defs>
+  <image href="gamefold-logo-white-source.png" width="1024" height="1536" filter="url(#extract-white)" />
+</svg>

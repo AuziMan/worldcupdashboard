@@ -1,5 +1,5 @@
 /*
- * World Cup Dashboard design tokens
+ * GAMEFOLD design tokens
  *
  * Brand primitives are the only values that should change during a rebrand.
  * Components consume semantic tokens (background, foreground, primary, etc.),
@@ -11,8 +11,12 @@
   --ds-palette-white: #ffffff;
   --ds-palette-brand: #0253ba;
 
-  --ds-font-sans: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
-  --ds-font-display: var(--ds-font-sans);
+  --ds-font-sans: "DM Sans", ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --ds-font-display: "Archivo", "DM Sans", ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --ds-tracking-display: -0.025em;
+  --ds-tracking-heading: -0.018em;
+  --ds-tracking-body: -0.006em;
+  --ds-tracking-label: 0.065em;
   --ds-font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
 
   --ds-radius-xs: 0.25rem;

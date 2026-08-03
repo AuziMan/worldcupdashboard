@@ -9,6 +9,8 @@ import BracketView from './components/BracketView'
 import HomePage from './components/HomePage'
 import ComingSoonPage from './components/ComingSoonPage'
 import TeamsView from './components/TeamsView'
+import { CalendarDays, GitFork, Table2, UsersRound } from 'lucide-react'
+import Seo from './components/Seo'
 import './App.css'
 import './styles/redesign.css'
 
@@ -16,7 +18,7 @@ const LEAGUES = {
   wc: {
     label: 'World Cup',
     name: 'FIFA World Cup 2026',
-    subtitle: 'USA · Canada · Mexico',
+    subtitle: '48 teams · One champion',
     logo: 'https://crests.football-data.org/wm26.png',
     tabs: ['Matches', 'Teams', 'Standings', 'Bracket'],
     attribution: 'football-data.org',
@@ -43,6 +45,12 @@ const LEAGUES = {
 }
 
 const API_BASE = import.meta.env.VITE_API_URL || ''
+const TAB_ICONS = {
+  Matches: CalendarDays,
+  Teams: UsersRound,
+  Standings: Table2,
+  Bracket: GitFork,
+}
 
 function SoccerDashboard({ onHome }) {
   const [league, setLeague] = useState('wc')
@@ -51,6 +59,7 @@ function SoccerDashboard({ onHome }) {
   const { matches, standings, loading, error, lastFetched, isLiveMode, refresh } = useLeagueData(league)
 
   const activeLeague = LEAGUES[league]
+  const seoDescription = `Follow ${activeLeague.name} ${tab.toLowerCase()}, live scores, fixtures, results, teams, and standings on GAMEFOLD.`
 
   function selectLeague(key) {
     setLeague(key)
@@ -59,6 +68,7 @@ function SoccerDashboard({ onHome }) {
 
   return (
     <div className="app">
+      <Seo title={`${tab} — ${activeLeague.name}`} description={seoDescription} />
       <Header league={activeLeague} lastFetched={lastFetched} onRefresh={refresh} loading={loading} onHome={onHome} />
 
       <nav className="tab-nav league-nav">
@@ -75,16 +85,20 @@ function SoccerDashboard({ onHome }) {
       </nav>
 
       <nav className="tab-nav">
-        {activeLeague.tabs.map(t => (
-          <button
-            key={t}
-            className={`tab-btn ${tab === t ? 'tab-btn--active' : ''}`}
-            onClick={() => setTab(t)}
-            aria-current={tab === t ? 'page' : undefined}
-          >
-            {t}
-          </button>
-        ))}
+        {activeLeague.tabs.map(t => {
+          const TabIcon = TAB_ICONS[t]
+          return (
+            <button
+              key={t}
+              className={`tab-btn ${tab === t ? 'tab-btn--active' : ''}`}
+              onClick={() => setTab(t)}
+              aria-current={tab === t ? 'page' : undefined}
+            >
+              <TabIcon aria-hidden="true" />
+              {t}
+            </button>
+          )
+        })}
       </nav>
 
       <main className="main-content">
@@ -165,8 +179,13 @@ export default function App() {
     window.location.hash = 'home'
   }
 
-  if (isAdmin) return <AdminPanel />
-  if (!sport) return <HomePage onSelectSport={selectSport} />
+  if (isAdmin) return <><Seo title="Admin | GAMEFOLD" robots="noindex, nofollow" /><AdminPanel /></>
+  if (!sport) return <><Seo title="GAMEFOLD — Live Sports Scores, Fixtures & Standings" /><HomePage onSelectSport={selectSport} /></>
   if (sport === 'soccer') return <SoccerDashboard onHome={goHome} />
-  return <ComingSoonPage sport={sport} onHome={goHome} />
+  return (
+    <>
+      <Seo title={`${sport.toUpperCase()} Scores — Coming Soon`} description={`${sport.toUpperCase()} scores, schedules, standings, and postseason coverage are coming to GAMEFOLD.`} />
+      <ComingSoonPage sport={sport} onHome={goHome} />
+    </>
+  )
 }

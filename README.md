@@ -1,6 +1,6 @@
-# FIFA World Cup 2026 Dashboard
+# GAMEFOLD
 
-A live match dashboard for the 2026 FIFA World Cup. Track live scores, upcoming fixtures, recent results, group stage standings, and the knockout bracket — all in one place.
+A focused sports dashboard for live scores, upcoming fixtures, recent results, teams, standings, and tournament brackets. Current coverage includes the 2026 FIFA World Cup, Premier League, and Major League Soccer.
 
 ## Features
 

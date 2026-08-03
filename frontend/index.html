@@ -2,10 +2,85 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <link rel="icon" type="image/png" href="./gamefold-favicon.png" media="(prefers-color-scheme: light)" />
+    <link rel="icon" type="image/png" href="./gamefold-favicon-dark.png" media="(prefers-color-scheme: dark)" />
+    <link rel="apple-touch-icon" href="./gamefold-favicon.png" />
+    <link rel="manifest" href="./site.webmanifest" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&display=swap" rel="stylesheet" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Follow live sports scores, upcoming fixtures, recent results, team rosters, league standings, and tournament brackets with GAMEFOLD." />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <meta name="application-name" content="GAMEFOLD" />
+    <meta name="apple-mobile-web-app-title" content="GAMEFOLD" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="theme-color" content="#0f0f0f" />
-    <title>FIFA World Cup 2026 Dashboard</title>
+    <link rel="canonical" href="https://auziman.github.io/worldcupdashboard/" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="GAMEFOLD" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:title" content="GAMEFOLD — Live Sports Scores, Fixtures & Standings" />
+    <meta property="og:description" content="Follow live scores, fixtures, results, teams, standings, and tournament brackets in one focused sports dashboard." />
+    <meta property="og:url" content="https://auziman.github.io/worldcupdashboard/" />
+    <meta property="og:image" content="https://auziman.github.io/worldcupdashboard/og-gamefold.png" />
+    <meta property="og:image:secure_url" content="https://auziman.github.io/worldcupdashboard/og-gamefold.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="GAMEFOLD live sports scores dashboard" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="GAMEFOLD — Live Sports Scores, Fixtures & Standings" />
+    <meta name="twitter:description" content="Follow live scores, fixtures, results, teams, standings, and tournament brackets in one focused sports dashboard." />
+    <meta name="twitter:image" content="https://auziman.github.io/worldcupdashboard/og-gamefold.png" />
+    <meta name="twitter:image:alt" content="GAMEFOLD live sports scores dashboard" />
+
+    <title>GAMEFOLD — Live Sports Scores, Fixtures & Standings</title>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "WebSite",
+            "@id": "https://auziman.github.io/worldcupdashboard/#website",
+            "url": "https://auziman.github.io/worldcupdashboard/",
+            "name": "GAMEFOLD",
+            "image": "https://auziman.github.io/worldcupdashboard/og-gamefold.png",
+            "description": "A focused dashboard for live sports scores, fixtures, results, teams, standings, and tournament brackets.",
+            "inLanguage": "en-US"
+          },
+          {
+            "@type": "WebApplication",
+            "@id": "https://auziman.github.io/worldcupdashboard/#application",
+            "name": "GAMEFOLD",
+            "url": "https://auziman.github.io/worldcupdashboard/",
+            "image": "https://auziman.github.io/worldcupdashboard/og-gamefold.png",
+            "applicationCategory": "SportsApplication",
+            "operatingSystem": "Any",
+            "browserRequirements": "Requires JavaScript and a modern web browser.",
+            "description": "Follow live sports scores, fixtures, results, team rosters, league standings, and tournament brackets.",
+            "isAccessibleForFree": true,
+            "offers": {
+              "@type": "Offer",
+              "price": "0",
+              "priceCurrency": "USD"
+            },
+            "featureList": [
+              "Live sports scores",
+              "Upcoming fixtures and recent results",
+              "League and group standings",
+              "Team rosters",
+              "Tournament brackets",
+              "Spoiler-free score controls"
+            ],
+            "inLanguage": "en-US"
+          }
+        ]
+      }
+    </script>
     <script>
       (() => {
         const savedTheme = localStorage.getItem('wcd-theme')

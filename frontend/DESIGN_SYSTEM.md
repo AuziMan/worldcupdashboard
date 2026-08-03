@@ -1,4 +1,4 @@
-# World Cup Dashboard Design System
+# GAMEFOLD Design System
 
 ## Direction
 

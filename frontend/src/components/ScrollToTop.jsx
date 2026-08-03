@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { ArrowUp } from 'lucide-react'
+import { Tooltip } from './ui/Tooltip'
 
 const SHOW_AFTER = 600
 
@@ -32,6 +33,7 @@ export default function ScrollToTop() {
   }
 
   return (
+    <Tooltip content="Back to top" side="left" disabled={!isVisible}>
     <button
       className={`scroll-to-top ${isVisible ? 'scroll-to-top--visible' : ''}`}
       onClick={scrollToTop}
@@ -40,5 +42,6 @@ export default function ScrollToTop() {
     >
       <ArrowUp aria-hidden="true" />
     </button>
+    </Tooltip>
   )
 }

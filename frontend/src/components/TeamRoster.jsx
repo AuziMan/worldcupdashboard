@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { ArrowLeft, UserRound } from 'lucide-react'
 import { getTeamColor } from '@/lib/teamColors'
+import { Tooltip } from './ui/Tooltip'
 
 const API_BASE = import.meta.env.VITE_API_URL || ''
 const POSITION_ORDER = ['Goalkeeper', 'Defence', 'Midfield', 'Offence']
@@ -122,10 +123,12 @@ export default function TeamRoster({ team, league, onBack }) {
 
   return (
     <section className="roster-view">
-      <button className="roster-back" onClick={onBack}>
-        <ArrowLeft aria-hidden="true" />
-        All teams
-      </button>
+      <Tooltip content="Return to the team directory" side="bottom">
+        <button className="roster-back" onClick={onBack}>
+          <ArrowLeft aria-hidden="true" />
+          All teams
+        </button>
+      </Tooltip>
 
       <header className="roster-header" style={{ '--roster-team-color': teamColor }}>
         <div className="roster-team-crest-wrap">
