@@ -9,7 +9,10 @@ import BracketView from './components/BracketView'
 import HomePage from './components/HomePage'
 import ComingSoonPage from './components/ComingSoonPage'
 import TeamsView from './components/TeamsView'
-import { CalendarDays, GitFork, Table2, UsersRound } from 'lucide-react'
+import FightSection from './components/FightSection'
+import RankingsView from './components/RankingsView'
+import { useUfcData } from './hooks/useUfcData'
+import { CalendarDays, GitFork, ListOrdered, Swords, Table2, UsersRound } from 'lucide-react'
 import Seo from './components/Seo'
 import { SPORTS } from './lib/sports'
 import './App.css'
@@ -65,12 +68,24 @@ const NBA_LEAGUE = {
   accent: '#C8102E',
 }
 
+const UFC_LEAGUE = {
+  label: 'UFC',
+  name: 'Ultimate Fighting Championship',
+  subtitle: 'Worldwide',
+  logo: SPORTS.ufc.logo,
+  tabs: ['Events', 'Rankings'],
+  attribution: 'ESPN',
+  accent: '#D20A0A',
+}
+
 const API_BASE = import.meta.env.VITE_API_URL || ''
 const TAB_ICONS = {
   Matches: CalendarDays,
   Teams: UsersRound,
   Standings: Table2,
   Bracket: GitFork,
+  Events: Swords,
+  Rankings: ListOrdered,
 }
 
 function SoccerDashboard({ onHome }) {
@@ -88,7 +103,7 @@ function SoccerDashboard({ onHome }) {
   }
 
   return (
-    <div className="app">
+    <div className="app" style={{ '--league-accent': activeLeague.accent }}>
       <Seo title={`${tab} — ${activeLeague.name}`} description={seoDescription} />
       <Header league={activeLeague} lastFetched={lastFetched} onRefresh={refresh} loading={loading} onHome={onHome} />
 
@@ -174,7 +189,7 @@ function SingleSportDashboard({ leagueKey, config, onHome }) {
   const { matches, standings, loading, error, lastFetched, isLiveMode, refresh } = useLeagueData(leagueKey)
 
   return (
-    <div className="app">
+    <div className="app" style={{ '--league-accent': config.accent }}>
       <Header league={config} lastFetched={lastFetched} onRefresh={refresh} loading={loading} onHome={onHome} />
 
       <nav className="tab-nav">
@@ -232,9 +247,68 @@ function SingleSportDashboard({ leagueKey, config, onHome }) {
   )
 }
 
+function UfcDashboard({ onHome }) {
+  const [tab, setTab] = useState('Events')
+  const { matches, standings, loading, error, lastFetched, isLiveMode, refresh } = useUfcData()
+
+  return (
+    <div className="app" style={{ '--league-accent': UFC_LEAGUE.accent }}>
+      <Header league={UFC_LEAGUE} lastFetched={lastFetched} onRefresh={refresh} loading={loading} onHome={onHome} />
+
+      <nav className="tab-nav">
+        {UFC_LEAGUE.tabs.map(t => {
+          const TabIcon = TAB_ICONS[t]
+          return (
+            <button
+              key={t}
+              className={`tab-btn ${tab === t ? 'tab-btn--active' : ''}`}
+              onClick={() => setTab(t)}
+              aria-current={tab === t ? 'page' : undefined}
+            >
+              <TabIcon aria-hidden="true" />
+              {t}
+            </button>
+          )
+        })}
+      </nav>
+
+      <main className="main-content">
+        {error && (
+          <div className="error-banner">
+            <strong>Having trouble loading fight data.</strong>
+            <p>The server may be waking up — please wait a moment and try refreshing.</p>
+          </div>
+        )}
+
+        {loading && !matches && (
+          <div className="loading-state">
+            <div className="spinner" />
+            <p>Loading {UFC_LEAGUE.name} data…</p>
+          </div>
+        )}
+
+        {!loading && !error && tab === 'Events' && (
+          <FightSection matches={matches} onSelectMatch={() => {}} />
+        )}
+
+        {!loading && !error && tab === 'Rankings' && (
+          <RankingsView standings={standings} />
+        )}
+      </main>
+
+      <footer className="footer">
+        <p>
+          Data provided by {UFC_LEAGUE.attribution} ·{' '}
+          Refreshes every minute (9 AM – 9 PM){isLiveMode ? ' · Live mode active' : ''}
+        </p>
+      </footer>
+    </div>
+  )
+}
+
 function sportFromHash() {
   const value = window.location.hash.slice(1)
-  return ['soccer', 'mlb', 'nba'].includes(value) ? value : null
+  return ['soccer', 'mlb', 'nba', 'ufc'].includes(value) ? value : null
 }
 
 export default function App() {
@@ -269,6 +343,7 @@ export default function App() {
   if (sport === 'soccer') return <SoccerDashboard onHome={goHome} />
   if (sport === 'mlb') return <SingleSportDashboard leagueKey="mlb" config={MLB_LEAGUE} onHome={goHome} />
   if (sport === 'nba') return <SingleSportDashboard leagueKey="nba" config={NBA_LEAGUE} onHome={goHome} />
+  if (sport === 'ufc') return <UfcDashboard onHome={goHome} />
   return (
     <>
       <Seo title={`${sport.toUpperCase()} Scores — Coming Soon`} description={`${sport.toUpperCase()} scores, schedules, standings, and postseason coverage are coming to GAMEFOLD.`} />

@@ -49,6 +49,8 @@ ESPN_SPORTS = {
 MLB_STATS_BASE_URL = "https://statsapi.mlb.com/api/v1"
 MLB_LOGO_BASE_URL = "https://www.mlbstatic.com/team-logos"
 MLB_HEADSHOT_BASE_URL = "https://img.mlbstatic.com/mlb-photos/image/upload/w_213,d_people:generic:headshot:silo:current.png,q_auto:best,f_auto/v1/people"
+ESPN_UFC_BASE_URL = "https://site.api.espn.com/apis/site/v2/sports/mma/ufc"
+ESPN_UFC_HEADSHOT_BASE_URL = "https://a.espncdn.com/i/headshots/mma/players/full"
 CACHE_TTL_DEFAULT = timedelta(seconds=60)
 CACHE_TTL_LIVE = timedelta(seconds=60)
 
@@ -62,12 +64,16 @@ CACHE_TTL_LIVE = timedelta(seconds=60)
 # provider (basketball is a second sport family on the same site API) rather
 # than a new provider module — the official stats.nba.com API was rejected
 # because it blocks datacenter/cloud IPs, which would break on Render.
+# "ufc" is its own provider ("espn_ufc") rather than a third ESPN_SPORTS entry:
+# MMA has no team/standings concept — fights get flattened one-per-entry into
+# "matches" and "standings" carries divisional rankings instead of a table.
 LEAGUES = {
     "wc": {"provider": "football-data", "code": "WC"},
     "epl": {"provider": "football-data", "code": "PL"},
     "mls": {"provider": "espn", "sport": "soccer", "code": "usa.1"},
     "mlb": {"provider": "mlbstats", "code": "1"},
     "nba": {"provider": "espn", "sport": "basketball", "code": "nba"},
+    "ufc": {"provider": "espn_ufc"},
 }
 
 _cache: dict = {}
@@ -460,6 +466,142 @@ def _mlbstats_team_detail(sport_id: str, team_id) -> dict:
     return {"coach": None, "squad": squad}
 
 
+# ────────────────────────────── ESPN UFC provider ──────────────────────────────
+# Same undocumented site.api.espn.com family as the ESPN provider above, but MMA's
+# event -> fight fan-out (many fights per fight-night event) and rankings-instead-
+# of-standings shape don't fit ESPN_SPORTS/_espn_matches/_espn_standings, so this
+# gets its own small provider rather than a third sport family. Fights are
+# flattened one-per-entry (not one-per-event) into the "matches" key so the
+# existing cache/live-detection machinery (_has_live_matches, cached()) keeps
+# working unmodified. ESPN doesn't expose a dedicated method-of-victory field —
+# it's scraped out of the play-by-play "details" list (see _espn_ufc_method).
+
+UFC_METHOD_LABELS = {
+    "decision": "Decision",
+    "submission": "Submission",
+    "kotko": "KO/TKO",
+}
+
+
+def _espn_ufc_get(path: str) -> dict:
+    r = requests.get(f"{ESPN_UFC_BASE_URL}{path}", timeout=10)
+    r.raise_for_status()
+    return r.json()
+
+
+def _espn_ufc_headshot(athlete: dict, athlete_id) -> str | None:
+    # ESPN is inconsistent here: /rankings gives a bare URL string, other feeds
+    # give a {"href": ...} object, and /scoreboard usually omits the field
+    # entirely. Fall back to ESPN's own predictable headshot CDN path (same
+    # one those explicit URLs point at) keyed by athlete id, so scoreboard
+    # fighters get a photo too, not just ranked ones. `athlete_id` is passed
+    # in separately because /scoreboard's athlete object has no "id" of its
+    # own — the id lives one level up, on the competitor.
+    headshot = athlete.get("headshot")
+    if isinstance(headshot, dict):
+        return headshot.get("href")
+    if isinstance(headshot, str) and headshot:
+        return headshot
+    return f"{ESPN_UFC_HEADSHOT_BASE_URL}/{athlete_id}.png" if athlete_id else None
+
+
+def _espn_ufc_fighter(competitor: dict) -> dict:
+    athlete = competitor.get("athlete", {})
+    athlete_id = athlete.get("id") or competitor.get("id")
+    return {
+        "id": athlete_id,
+        "name": athlete.get("displayName"),
+        "shortName": athlete.get("shortName"),
+        "photo": _espn_ufc_headshot(athlete, athlete_id),
+        "record": (competitor.get("records") or [{}])[0].get("summary"),
+    }
+
+
+def _espn_ufc_method(details: list) -> str | None:
+    # Entries look like {"type": {"text": "Unofficial Winner Decision"}} —
+    # "Unofficial Winner Kotko" is ESPN's own (mis-cased) shorthand for KO/TKO.
+    for detail in details or []:
+        text = (detail.get("type") or {}).get("text", "")
+        if text.startswith("Unofficial Winner "):
+            method = text.removeprefix("Unofficial Winner ").strip().lower()
+            return UFC_METHOD_LABELS.get(method, method.title())
+    return None
+
+
+def _espn_ufc_division_label(rtype: str) -> str:
+    return " ".join("Women's" if w == "womens" else w.capitalize() for w in rtype.split("-"))
+
+
+def _espn_ufc_matches() -> dict:
+    now = datetime.now(timezone.utc)
+    start = (now - timedelta(days=45)).strftime("%Y%m%d")
+    end = (now + timedelta(days=180)).strftime("%Y%m%d")
+    data = _espn_ufc_get(f"/scoreboard?dates={start}-{end}")
+
+    matches = []
+    for event in data.get("events", []):
+        for comp in event.get("competitions", []):
+            status_type = comp.get("status", {}).get("type", {})
+            status = ESPN_STATUS_MAP.get(status_type.get("name"), "SCHEDULED")
+
+            competitors = sorted(comp.get("competitors", []), key=lambda c: c.get("order", 0))
+            fighter1 = competitors[0] if len(competitors) > 0 else {}
+            fighter2 = competitors[1] if len(competitors) > 1 else {}
+
+            winner = next((c for c in competitors if c.get("winner")), None)
+            result = None
+            if status == "FINISHED" and winner:
+                result = {
+                    "winnerId": (winner.get("athlete") or {}).get("id") or winner.get("id"),
+                    "round": comp.get("status", {}).get("period"),
+                    "method": _espn_ufc_method(comp.get("details")),
+                }
+
+            matches.append({
+                "id": comp.get("id"),
+                "event": event.get("name"),
+                "utcDate": comp.get("date") or event.get("date"),
+                "status": status,
+                "weightClass": (comp.get("type") or {}).get("abbreviation"),
+                "fighter1": _espn_ufc_fighter(fighter1),
+                "fighter2": _espn_ufc_fighter(fighter2),
+                "result": result,
+            })
+
+    return {"matches": matches}
+
+
+def _espn_ufc_standings() -> dict:
+    data = _espn_ufc_get("/rankings")
+
+    groups = []
+    for group in data.get("rankings", []):
+        # Skip pound-for-pound (cross-division, not a weight class) and the
+        # single-entry "champions" lists — the numbered division lists already
+        # carry the champion at rank 1.
+        rtype = group.get("type", "")
+        if "pound-for-pound" in rtype or rtype.endswith("-champions"):
+            continue
+
+        table = []
+        for rank in group.get("ranks", []):
+            athlete = rank.get("athlete", {})
+            table.append({
+                "position": rank.get("current"),
+                "fighter": {
+                    "id": athlete.get("id"),
+                    "name": athlete.get("displayName"),
+                    "shortName": athlete.get("shortname"),
+                    "photo": _espn_ufc_headshot(athlete, athlete.get("id")),
+                },
+                "record": rank.get("recordSummary"),
+            })
+        table.sort(key=lambda row: row["position"] or 0)
+        groups.append({"group": _espn_ufc_division_label(rtype), "table": table})
+
+    return {"standings": groups}
+
+
 # ────────────────────────────────── dispatch ──────────────────────────────────
 
 def _league_config(league: str) -> dict:
@@ -475,6 +617,8 @@ def _fetch_matches(league: str) -> dict:
         return _espn_matches(config["sport"], config["code"])
     if config["provider"] == "mlbstats":
         return _mlbstats_matches(config["code"])
+    if config["provider"] == "espn_ufc":
+        return _espn_ufc_matches()
     return _fd_matches(config["code"])
 
 
@@ -484,6 +628,8 @@ def _fetch_standings(league: str) -> dict:
         return _espn_standings(config["sport"], config["code"])
     if config["provider"] == "mlbstats":
         return _mlbstats_standings(config["code"])
+    if config["provider"] == "espn_ufc":
+        return _espn_ufc_standings()
     return _fd_standings(config["code"])
 
 
@@ -493,6 +639,8 @@ def _fetch_teams(league: str) -> dict:
         return _espn_teams(config["sport"], config["code"])
     if config["provider"] == "mlbstats":
         return _mlbstats_teams(config["code"])
+    if config["provider"] == "espn_ufc":
+        return {"teams": []}
     return _fd_teams(config["code"])
 
 
@@ -502,6 +650,8 @@ def _fetch_team_detail(league: str, team_id) -> dict:
         return _espn_team_detail(config["sport"], config["code"], team_id)
     if config["provider"] == "mlbstats":
         return _mlbstats_team_detail(config["code"], team_id)
+    if config["provider"] == "espn_ufc":
+        return {"coach": None, "squad": []}
     return _fd_team_detail(config["code"], team_id)
 
 
