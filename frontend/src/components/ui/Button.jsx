@@ -1,4 +1,5 @@
 import { cva } from 'class-variance-authority'
+import { forwardRef } from 'react'
 import { cn } from '@/lib/utils'
 
 const buttonVariants = cva(
@@ -24,12 +25,13 @@ const buttonVariants = cva(
 )
 
 // eslint-disable-next-line react/prop-types
-export function Button({ className, variant, size, type = 'button', ...props }) {
+export const Button = forwardRef(function Button({ className, variant, size, type = 'button', ...props }, ref) {
   return (
     <button
+      ref={ref}
       type={type}
       className={cn(buttonVariants({ variant, size }), className)}
       {...props}
     />
   )
-}
+})

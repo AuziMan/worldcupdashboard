@@ -1,6 +1,7 @@
-import { ArrowLeft } from 'lucide-react'
+import { House } from 'lucide-react'
 import ThemeToggle from './ThemeToggle'
 import { SPORTS } from '@/lib/sports'
+import { Tooltip } from './ui/Tooltip'
 
 const SPORT_COPY = {
   mlb: {
@@ -23,10 +24,12 @@ export default function ComingSoonPage({ sport, onHome }) {
   return (
     <main className="coming-soon">
       <header className="coming-soon-nav">
-        <button className="back-button" onClick={onHome}>
-          <ArrowLeft aria-hidden="true" />
-          All sports
-        </button>
+        <Tooltip content="Return to sport selection" side="bottom">
+          <button className="back-button" onClick={onHome}>
+            <House aria-hidden="true" />
+            Sports home
+          </button>
+        </Tooltip>
         <ThemeToggle />
       </header>
 

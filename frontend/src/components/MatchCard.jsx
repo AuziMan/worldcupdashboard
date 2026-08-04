@@ -17,8 +17,9 @@ const STATUS_LABELS = {
 
 function formatCountdown(kickoff) {
   const diff = kickoff - Date.now()
-  if (diff <= 0 || diff > 30 * 60000) return null
-  const m = Math.floor(diff / 60000)
+  if (diff <= 0 || diff > 4 * 60 * 60000) return null
+  const m = Math.ceil(diff / 60000)
+  if (m >= 60) return `in ${Math.floor(m / 60)}h ${m % 60}m`
   if (m > 0) return `in ${m}m`
   return 'soon'
 }
@@ -32,6 +33,7 @@ function TeamSide({ team, isWinner }) {
         <div className="team-crest-placeholder">?</div>
       )}
       <span className="team-name">{team?.shortName || team?.name || 'TBD'}</span>
+      {isWinner && <span className="winner-label">Winner</span>}
     </div>
   )
 }
@@ -73,6 +75,11 @@ function MatchCard({ match, onClick, showProgress = true }) {
     '--team-home-color': getTeamColor(homeTeam),
     '--team-away-color': getTeamColor(awayTeam),
   }
+  const accessibleHome = homeTeam?.shortName || homeTeam?.name || 'Home team'
+  const accessibleAway = awayTeam?.shortName || awayTeam?.name || 'Away team'
+  const accessibleResult = spoilerHidden
+    ? 'score hidden'
+    : hasScore ? `${homeScore} to ${awayScore}` : kickoff.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 
   const homeColor = getTeamColor(homeTeam)
   const awayColor = getTeamColor(awayTeam)
@@ -85,19 +92,15 @@ function MatchCard({ match, onClick, showProgress = true }) {
     <div
       className={`match-card ${isLive ? 'match-card--live' : ''} ${isSuspended ? 'match-card--suspended' : ''} ${isFinished ? 'match-card--finished' : ''} ${spoilerHidden ? 'match-card--spoiler' : ''}`}
       style={teamGradient}
-      onClick={onClick}
-      role="button"
-      tabIndex={0}
-      onKeyDown={e => {
-        if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) {
-          e.preventDefault()
-          onClick?.()
-        }
-      }}
     >
+      <button
+        className="match-card-open"
+        onClick={onClick}
+        aria-label={`${accessibleHome} versus ${accessibleAway}, ${statusLabel}, ${accessibleResult}. Open match details.`}
+      />
       <div className="match-meta">
         <span className={`match-status match-status--${status?.toLowerCase()}`}>{statusLabel}</span>
-        {isLive && period && <span className="match-minute">{period}</span>}
+        {isLive && elapsedMinutes != null && <span className="match-minute" aria-label={`${elapsedMinutes} minutes elapsed`}>{elapsedMinutes}′</span>}
         {group && <span className="match-group">{group.replace('GROUP_', 'Group ')}</span>}
       </div>
 
@@ -112,6 +115,7 @@ function MatchCard({ match, onClick, showProgress = true }) {
                   event.stopPropagation()
                   revealMatch(match.id)
                 }}
+                aria-label={`Reveal score for ${accessibleHome} versus ${accessibleAway}`}
               >
                 Reveal score
               </button>
@@ -129,7 +133,7 @@ function MatchCard({ match, onClick, showProgress = true }) {
       </div>
 
       {progressPct !== null && (
-        <div className="match-progress-bar">
+        <div className="match-progress-bar" role="progressbar" aria-label="Estimated match progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow={Math.round(progressPct)}>
           <div className="match-progress-fill" style={{ width: `${progressPct}%` }} />
         </div>
       )}

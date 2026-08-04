@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#0f0f0f"/>
+  <circle cx="1028" cy="92" r="360" fill="#0253ba" opacity=".22"/>
+  <text x="80" y="127" fill="#fff" font-family="Arial, sans-serif" font-size="42" font-weight="700" letter-spacing="2">GAMEFOLD</text>
+  <text x="80" y="310" fill="#fff" font-family="Arial, sans-serif" font-size="78" font-weight="700">Every game.</text>
+  <text x="80" y="392" fill="#fff" font-family="Arial, sans-serif" font-size="78" font-weight="700">One clear view.</text>
+  <text x="84" y="472" fill="#a9a9a9" font-family="Arial, sans-serif" font-size="27">Live scores · Fixtures · Standings · Brackets</text>
+  <rect x="80" y="538" width="1040" height="2" fill="#323232"/>
+</svg>

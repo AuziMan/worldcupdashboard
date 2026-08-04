@@ -1,0 +1,20 @@
+{
+  "name": "GAMEFOLD — Live Sports Scores",
+  "short_name": "GAMEFOLD",
+  "description": "Live sports scores, fixtures, results, standings, teams, and tournament brackets.",
+  "id": "/worldcupdashboard/",
+  "start_url": "/worldcupdashboard/",
+  "scope": "/worldcupdashboard/",
+  "display": "standalone",
+  "background_color": "#0f0f0f",
+  "theme_color": "#0253ba",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "gamefold-favicon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

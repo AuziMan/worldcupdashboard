@@ -1,15 +1,16 @@
-import { Trophy } from 'lucide-react'
 import ThemeToggle from './ThemeToggle'
+import BrandMark from './BrandMark'
 import { SPORTS } from '@/lib/sports'
+import { Tooltip } from './ui/Tooltip'
 
 // eslint-disable-next-line react/prop-types
 export default function HomePage({ onSelectSport }) {
   return (
     <main className="welcome">
       <header className="welcome-nav">
-        <a className="welcome-brand" href="#home" aria-label="Sports dashboard home">
-          <span className="welcome-brand-mark"><Trophy aria-hidden="true" /></span>
-          <span>Fieldhouse</span>
+        <a className="welcome-brand" href="#home" aria-label="GAMEFOLD home">
+          <BrandMark className="welcome-brand-mark" />
+          <span>GAMEFOLD</span>
         </a>
         <ThemeToggle />
       </header>
@@ -23,9 +24,13 @@ export default function HomePage({ onSelectSport }) {
 
         <div className="welcome-sport-logos" aria-label="Choose a sport">
           {Object.entries(SPORTS).map(([key, sport]) => (
+            <Tooltip
+              key={key}
+              content={sport.detail === 'Coming soon' ? `${sport.label} is coming soon` : `Open ${sport.label}`}
+              side="bottom"
+            >
             <button
               className="welcome-sport-logo"
-              key={key}
               onClick={() => onSelectSport(key)}
               aria-label={`Open ${sport.label}${sport.detail === 'Coming soon' ? ', coming soon' : ''}`}
             >
@@ -33,6 +38,7 @@ export default function HomePage({ onSelectSport }) {
               <span>{sport.label}</span>
               <small>{sport.detail}</small>
             </button>
+            </Tooltip>
           ))}
         </div>
       </section>

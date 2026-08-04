@@ -16,6 +16,91 @@ body {
   overflow-x: hidden;
 }
 
+h1,
+h2,
+h3,
+.match-score {
+  font-family: var(--ds-font-display);
+  font-kerning: normal;
+  font-synthesis: none;
+  font-feature-settings: "kern" 1, "liga" 1;
+}
+
+p,
+li,
+td,
+th,
+button,
+input,
+small,
+span {
+  font-kerning: normal;
+}
+
+:where(button, [role="button"], a, input, select, textarea):focus-visible {
+  outline: 3px solid var(--ds-color-focus);
+  outline-offset: 3px;
+}
+
+.app-tooltip-positioner {
+  z-index: 1000;
+}
+
+.app-tooltip-popup {
+  position: relative;
+  max-width: min(16rem, calc(100vw - 1.25rem));
+  padding: 0.5rem 0.7rem;
+  color: var(--ds-color-text-inverse);
+  background: var(--ds-color-bg-inverse);
+  border: 1px solid color-mix(in srgb, var(--ds-color-text-inverse) 18%, transparent);
+  border-radius: var(--ds-radius-sm);
+  box-shadow: 0 0.4rem 1.1rem rgb(0 0 0 / 0.16);
+  font-family: var(--ds-font-sans);
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.35;
+  letter-spacing: 0;
+  text-align: center;
+  text-wrap: pretty;
+  transform-origin: var(--transform-origin);
+  transition: opacity 120ms ease, transform 120ms var(--ds-ease-standard);
+}
+
+.app-tooltip-popup[data-starting-style],
+.app-tooltip-popup[data-ending-style] {
+  opacity: 0;
+  transform: scale(0.96);
+}
+
+.app-tooltip-popup[data-instant] {
+  transition-duration: 0ms;
+}
+
+.app-tooltip-arrow {
+  position: relative;
+  display: block;
+  width: 0.75rem;
+  height: 0.4rem;
+  overflow: clip;
+}
+
+.app-tooltip-arrow::before {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 0.5rem;
+  height: 0.5rem;
+  background: var(--ds-color-bg-inverse);
+  border: 1px solid color-mix(in srgb, var(--ds-color-text-inverse) 18%, transparent);
+  transform: translate(-50%, 55%) rotate(45deg);
+}
+
+.app-tooltip-arrow[data-side="bottom"] { top: -0.4rem; transform: rotate(180deg); }
+.app-tooltip-arrow[data-side="top"] { bottom: -0.4rem; }
+.app-tooltip-arrow[data-side="left"] { right: -0.58rem; transform: rotate(-90deg); }
+.app-tooltip-arrow[data-side="right"] { left: -0.58rem; transform: rotate(90deg); }
+
 .group-table,
 .modal,
 .bracket-scroll,
@@ -65,24 +150,39 @@ body {
   gap: 0.7rem;
   color: var(--ds-color-text-primary);
   font-size: 0.9rem;
-  font-weight: 850;
-  letter-spacing: -0.035em;
+  font-weight: 800;
+  letter-spacing: -0.018em;
   text-decoration: none;
 }
 
 .welcome-brand-mark {
-  width: 2.25rem;
-  height: 2.25rem;
-  display: grid;
-  place-items: center;
-  color: var(--ds-color-on-brand);
-  background: var(--ds-color-brand);
-  border-radius: 50%;
+  width: 2.65rem;
+  height: 1.7rem;
 }
 
-.welcome-brand-mark svg {
-  width: 1rem;
-  stroke-width: 2.5;
+.brand-mark {
+  position: relative;
+  display: inline-block;
+  flex: 0 0 auto;
+}
+
+.brand-mark img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.brand-mark-dark {
+  display: none !important;
+}
+
+[data-theme="dark"] .brand-mark-light {
+  display: none;
+}
+
+[data-theme="dark"] .brand-mark-dark {
+  display: block !important;
 }
 
 .welcome-content {
@@ -92,15 +192,15 @@ body {
   display: grid;
   align-content: center;
   margin: auto;
-  padding: clamp(4rem, 10vw, 8rem) 0;
+  padding: clamp(2rem, 5vw, 4rem) 0;
 }
 
 .welcome-eyebrow {
   margin-bottom: 1.1rem;
   color: var(--ds-color-brand);
   font-size: 0.72rem;
-  font-weight: 850;
-  letter-spacing: 0.14em;
+  font-weight: 800;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
@@ -108,9 +208,10 @@ body {
   max-width: 10ch;
   color: var(--ds-color-text-primary);
   font-size: clamp(4rem, 12vw, 9rem);
-  font-weight: 900;
-  line-height: 0.82;
-  letter-spacing: -0.09em;
+  font-weight: 800;
+  line-height: 0.9;
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
 }
 
 .welcome-intro {
@@ -118,9 +219,9 @@ body {
   margin-top: clamp(2rem, 5vw, 3.5rem);
   color: var(--ds-color-text-secondary);
   font-size: clamp(1rem, 2vw, 1.3rem);
-  font-weight: 550;
+  font-weight: 500;
   line-height: 1.5;
-  letter-spacing: -0.025em;
+  letter-spacing: -0.012em;
 }
 
 .welcome-sport-logos {
@@ -189,7 +290,7 @@ body {
   color: var(--ds-color-text-tertiary);
   border-top: 1px solid var(--ds-color-border-default);
   font-size: 0.65rem;
-  font-weight: 750;
+  font-weight: 700;
   letter-spacing: 0.07em;
   text-transform: uppercase;
 }
@@ -252,8 +353,8 @@ body {
   margin-bottom: 0.8rem;
   color: var(--ds-color-brand);
   font-size: 0.72rem;
-  font-weight: 850;
-  letter-spacing: 0.13em;
+  font-weight: 800;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
@@ -261,9 +362,9 @@ body {
   max-width: 11ch;
   color: var(--ds-color-text-primary);
   font-size: clamp(3.5rem, 10vw, 7.5rem);
-  font-weight: 900;
+  font-weight: 800;
   line-height: 0.9;
-  letter-spacing: -0.08em;
+  letter-spacing: -0.025em;
 }
 
 .coming-soon-content > span {
@@ -377,8 +478,8 @@ body.team-roster-active .app {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  font-weight: 750;
-  letter-spacing: -0.015em;
+  font-weight: 700;
+  letter-spacing: -0.01em;
   cursor: pointer;
   transition:
     transform var(--ds-duration-fast) var(--ds-ease-standard),
@@ -512,16 +613,16 @@ body.team-roster-active .app {
   color: var(--ds-color-text-secondary);
   font-size: 0.7rem;
   font-weight: 800;
-  letter-spacing: 0.13em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
 .header-title h1 {
   color: var(--ds-color-text-primary);
   font-size: clamp(1.8rem, 4vw, 3.4rem);
-  font-weight: 850;
+  font-weight: 800;
   line-height: 0.95;
-  letter-spacing: -0.065em;
+  letter-spacing: -0.025em;
   text-wrap: balance;
 }
 
@@ -544,7 +645,7 @@ body.team-roster-active .app {
   margin-right: 0.2rem;
   color: var(--ds-color-text-secondary);
   font-size: 0.73rem;
-  font-weight: 650;
+  font-weight: 600;
   white-space: nowrap;
 }
 
@@ -618,7 +719,7 @@ body.team-roster-active .app {
   background: var(--ds-color-bg-surface);
   color: var(--ds-color-text-secondary);
   font-size: 0.72rem;
-  font-weight: 750;
+  font-weight: 700;
   letter-spacing: 0;
   white-space: nowrap;
 }
@@ -648,12 +749,21 @@ body.team-roster-active .app {
 
 .tab-nav:not(.league-nav) .tab-btn {
   position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
   padding: 0.85rem 0.9rem 1rem;
   border: 0;
   color: var(--ds-color-text-secondary);
   font-size: 0.88rem;
-  font-weight: 720;
+  font-weight: 700;
   white-space: nowrap;
+}
+
+.tab-nav:not(.league-nav) .tab-btn svg {
+  width: 0.95rem;
+  height: 0.95rem;
+  stroke-width: 2.1;
 }
 
 .tab-nav:not(.league-nav) .tab-btn::after {
@@ -765,9 +875,9 @@ body.team-roster-active .app {
   margin: clamp(3.5rem, 7vw, 6rem) 0 1.35rem;
   color: var(--ds-color-text-primary);
   font-size: clamp(1.65rem, 3vw, 2.5rem);
-  font-weight: 850;
+  font-weight: 800;
   line-height: 1;
-  letter-spacing: -0.055em;
+  letter-spacing: -0.025em;
 }
 
 .match-section > section:first-of-type .section-title,
@@ -777,6 +887,30 @@ body.team-roster-active .app {
 
 .section-title--live {
   color: var(--ds-color-text-primary);
+}
+
+.live-match-strip {
+  margin-inline: calc(var(--ds-space-page) * -0.5);
+  padding: clamp(1rem, 3vw, 1.5rem) calc(var(--ds-space-page) * 0.5) clamp(1.25rem, 3vw, 1.75rem);
+  background: color-mix(in srgb, var(--ds-color-live) 7%, var(--ds-color-bg-surface));
+  border: 1px solid color-mix(in srgb, var(--ds-color-live) 28%, var(--ds-color-border-default));
+  border-radius: var(--ds-radius-xl);
+}
+
+.live-match-strip .section-title {
+  margin-top: 0;
+}
+
+.section-title--soon span {
+  padding: 0.28rem 0.55rem;
+  color: var(--ds-color-brand);
+  background: var(--ds-color-brand-subtle);
+  border-radius: var(--ds-radius-full);
+  font-family: var(--ds-font-sans);
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
 .section-title--live::before {
@@ -795,7 +929,7 @@ body.team-roster-active .app {
   color: var(--ds-color-text-secondary);
   font-size: 0.7rem;
   font-weight: 800;
-  letter-spacing: 0.11em;
+  letter-spacing: 0.075em;
 }
 
 .date-divider--today {
@@ -868,6 +1002,33 @@ body.team-roster-active .app {
     transform var(--ds-duration-normal) var(--ds-ease-standard);
 }
 
+.match-card-open {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  width: 100%;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: inherit;
+  cursor: pointer;
+}
+
+.match-card-open:focus-visible {
+  outline: 3px solid var(--ds-color-focus);
+  outline-offset: -4px;
+}
+
+.match-card > :not(.match-card-open) {
+  pointer-events: none;
+}
+
+.match-card .spoiler-reveal {
+  position: relative;
+  z-index: 2;
+  pointer-events: auto;
+}
+
 .match-card:hover {
   --match-card-team-mix: 20%;
   background: linear-gradient(
@@ -918,7 +1079,7 @@ body.team-roster-active .app {
   background: var(--ds-color-bg-subtle);
   border-radius: var(--ds-radius-full);
   font-size: 0.6rem;
-  font-weight: 850;
+  font-weight: 800;
   letter-spacing: 0.08em;
 }
 
@@ -945,6 +1106,14 @@ body.team-roster-active .app {
   background: var(--ds-color-brand-subtle);
 }
 
+.match-minute {
+  margin-left: 0.4rem;
+  color: var(--ds-color-live);
+  font-family: var(--ds-font-display);
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
 .match-group {
   color: var(--ds-color-text-secondary);
   font-size: 0.68rem;
@@ -955,6 +1124,15 @@ body.team-roster-active .app {
   flex: 1;
   align-items: center;
   gap: 0.55rem;
+}
+
+.match-teams .team-side {
+  min-width: 0;
+}
+
+.match-teams .match-vs {
+  width: 5.75rem;
+  min-width: 5.75rem;
 }
 
 .team-side {
@@ -991,7 +1169,7 @@ body.team-roster-active .app {
   max-width: 100%;
   color: var(--ds-color-text-primary);
   font-size: 0.78rem;
-  font-weight: 750;
+  font-weight: 700;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1002,29 +1180,39 @@ body.team-roster-active .app {
 }
 
 .team-side--winner .team-name::after {
-  content: " •";
-  color: var(--ds-color-brand);
+  content: none;
+}
+
+.winner-label {
+  padding: 0.16rem 0.36rem;
+  color: var(--ds-color-on-brand);
+  background: var(--ds-color-brand);
+  border-radius: var(--ds-radius-full);
+  font-size: 0.5rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
 .match-vs {
   min-width: 4.75rem;
   color: var(--ds-color-text-secondary);
   font-size: 0.76rem;
-  font-weight: 650;
+  font-weight: 600;
   text-align: center;
 }
 
 .match-score {
   color: var(--ds-color-text-primary);
   font-size: clamp(1.7rem, 4vw, 2.15rem);
-  font-weight: 900;
-  letter-spacing: -0.08em;
+  font-weight: 800;
+  letter-spacing: -0.025em;
   font-variant-numeric: tabular-nums;
 }
 
 .match-score-sep {
   color: var(--ds-color-text-tertiary);
-  font-weight: 450;
+  font-weight: 400;
 }
 
 .match-countdown {
@@ -1033,7 +1221,7 @@ body.team-roster-active .app {
   border-radius: var(--ds-radius-full);
   padding: 0.28rem 0.5rem;
   font-size: 0.65rem;
-  font-weight: 850;
+  font-weight: 800;
 }
 
 .spoiler-reveal,
@@ -1045,7 +1233,7 @@ body.team-roster-active .app {
   border: 1px solid color-mix(in srgb, var(--ds-color-brand) 42%, var(--ds-color-border-default));
   border-radius: var(--ds-radius-full);
   font-size: 0.62rem;
-  font-weight: 850;
+  font-weight: 800;
   line-height: 1.1;
   cursor: pointer;
   white-space: nowrap;
@@ -1094,21 +1282,16 @@ body.team-roster-active .app {
 /* Standings */
 .standings-grid {
   grid-template-columns: minmax(0, 1fr);
-  gap: 1.25rem;
+  gap: clamp(2.5rem, 6vw, 4.5rem);
 }
 
 .group-table {
   width: 100%;
-  height: 28rem;
   overflow-x: auto;
-  overflow-y: auto;
-  background: var(--ds-color-bg-surface);
-  border: 1.5px solid var(--ds-color-border-default);
-  border-radius: var(--ds-radius-lg);
-  box-shadow: none;
-  transition:
-    border-color var(--ds-duration-normal) var(--ds-ease-standard),
-    transform var(--ds-duration-normal) var(--ds-ease-standard);
+  overflow-y: visible;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
   scrollbar-color: var(--ds-color-border-strong) transparent;
   scrollbar-width: thin;
 }
@@ -1131,35 +1314,28 @@ body.team-roster-active .app {
   min-width: 43rem;
 }
 
-.group-table:hover {
-  border-color: var(--ds-color-border-strong);
-}
-
 .group-name {
-  position: sticky;
-  top: 0;
-  z-index: 3;
-  padding: 1.1rem 1.2rem;
+  padding: 0 0 0.85rem;
   color: var(--ds-color-text-primary);
-  background: var(--ds-color-bg-surface);
-  border-bottom: 1.5px solid var(--ds-color-border-default);
-  font-size: 1rem;
-  font-weight: 850;
-  letter-spacing: -0.035em;
+  background: transparent;
+  border-bottom: 1px solid var(--ds-color-border-strong);
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: -0.018em;
 }
 
 .group-table th {
-  padding: 0.7rem 0.55rem;
+  padding: 0.75rem 0.55rem 0.6rem;
   color: var(--ds-color-text-tertiary);
-  background: var(--ds-color-bg-subtle);
-  border: 0;
+  background: transparent;
+  border-bottom: 1px solid var(--ds-color-border-subtle);
   font-size: 0.58rem;
   font-weight: 800;
   letter-spacing: 0.08em;
 }
 
 .group-table td {
-  padding: 0.78rem 0.55rem;
+  padding: 0.9rem 0.55rem;
   color: var(--ds-color-text-secondary);
   border-color: var(--ds-color-border-subtle);
   font-size: 0.72rem;
@@ -1171,16 +1347,17 @@ body.team-roster-active .app {
 }
 
 .group-table tbody tr:hover {
-  background: var(--ds-color-bg-subtle);
+  background: color-mix(in srgb, var(--ds-color-text-primary) 3%, transparent);
 }
 
 .group-table .row--qualify {
-  background: var(--ds-color-brand-subtle);
+  background: transparent;
 }
 
 .group-table .row--qualify td:first-child {
-  border-left: 3px solid var(--ds-color-brand);
-  box-shadow: none;
+  color: var(--ds-color-brand);
+  font-weight: 800;
+  box-shadow: inset 2px 0 0 var(--ds-color-brand);
 }
 
 /* Team directory */
@@ -1203,25 +1380,25 @@ body.team-roster-active .app {
   margin-bottom: 0.5rem;
   color: var(--ds-color-brand);
   font-size: 0.65rem;
-  font-weight: 850;
-  letter-spacing: 0.12em;
+  font-weight: 800;
+  letter-spacing: 0.075em;
   text-transform: uppercase;
 }
 
 .teams-view-header h1 {
   color: var(--ds-color-text-primary);
   font-size: clamp(2.5rem, 6vw, 4.75rem);
-  font-weight: 900;
+  font-weight: 800;
   line-height: 0.9;
-  letter-spacing: -0.075em;
+  letter-spacing: -0.025em;
 }
 
 .teams-view-header > strong {
   color: var(--ds-color-text-tertiary);
   font-size: clamp(2rem, 5vw, 4rem);
-  font-weight: 850;
+  font-weight: 800;
   line-height: 0.85;
-  letter-spacing: -0.065em;
+  letter-spacing: -0.025em;
   font-variant-numeric: tabular-nums;
 }
 
@@ -1288,7 +1465,7 @@ body.team-roster-active .app {
 .team-directory-placeholder {
   color: var(--ds-palette-ink);
   font-size: 1.5rem;
-  font-weight: 900;
+  font-weight: 800;
 }
 
 .team-directory-copy {
@@ -1309,16 +1486,16 @@ body.team-roster-active .app {
 .team-directory-copy h2 {
   color: var(--ds-color-text-primary);
   font-size: clamp(1.05rem, 2vw, 1.3rem);
-  font-weight: 850;
+  font-weight: 800;
   line-height: 1.05;
-  letter-spacing: -0.045em;
+  letter-spacing: -0.02em;
 }
 
 .team-directory-copy p {
   margin-top: 0.35rem;
   color: var(--ds-color-text-secondary);
   font-size: 0.68rem;
-  font-weight: 650;
+  font-weight: 600;
 }
 
 .team-directory-stats {
@@ -1335,7 +1512,7 @@ body.team-roster-active .app {
   gap: 0.15rem;
   color: var(--ds-color-text-tertiary);
   font-size: 0.56rem;
-  font-weight: 750;
+  font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
@@ -1348,8 +1525,8 @@ body.team-roster-active .app {
 .team-directory-stats strong {
   color: var(--ds-color-text-primary);
   font-size: 0.95rem;
-  font-weight: 900;
-  letter-spacing: -0.035em;
+  font-weight: 800;
+  letter-spacing: -0.018em;
   font-variant-numeric: tabular-nums;
 }
 
@@ -1417,8 +1594,8 @@ body.team-roster-active .app {
   margin-bottom: 0.5rem;
   color: var(--ds-color-brand);
   font-size: 0.62rem;
-  font-weight: 850;
-  letter-spacing: 0.12em;
+  font-weight: 800;
+  letter-spacing: 0.075em;
   text-transform: uppercase;
 }
 
@@ -1426,25 +1603,25 @@ body.team-roster-active .app {
   max-width: 16ch;
   color: var(--ds-color-text-primary);
   font-size: clamp(2.3rem, 6vw, 5rem);
-  font-weight: 900;
-  line-height: 0.88;
-  letter-spacing: -0.075em;
+  font-weight: 800;
+  line-height: 0.92;
+  letter-spacing: -0.025em;
 }
 
 .roster-header p {
   margin-top: 0.85rem;
   color: var(--ds-color-text-secondary);
   font-size: 0.78rem;
-  font-weight: 650;
+  font-weight: 600;
 }
 
 .roster-header > strong {
   align-self: end;
   color: var(--ds-color-text-tertiary);
   font-size: clamp(2.5rem, 6vw, 5rem);
-  font-weight: 900;
+  font-weight: 800;
   line-height: 0.8;
-  letter-spacing: -0.08em;
+  letter-spacing: -0.025em;
   font-variant-numeric: tabular-nums;
 }
 
@@ -1478,9 +1655,9 @@ body.team-roster-active .app {
 .roster-position-heading h2 {
   color: var(--ds-color-text-primary);
   font-size: clamp(1.5rem, 3vw, 2.25rem);
-  font-weight: 850;
+  font-weight: 800;
   line-height: 1;
-  letter-spacing: -0.05em;
+  letter-spacing: -0.02em;
 }
 
 .roster-position-heading span {
@@ -1556,7 +1733,7 @@ body.team-roster-active .app {
   background: var(--ds-color-brand);
   border-radius: var(--ds-radius-full);
   font-size: 0.62rem;
-  font-weight: 900;
+  font-weight: 800;
 }
 
 .player-card-copy {
@@ -1576,9 +1753,9 @@ body.team-roster-active .app {
 .player-card-copy h3 {
   color: var(--ds-color-text-primary);
   font-size: 1.05rem;
-  font-weight: 850;
+  font-weight: 800;
   line-height: 1.05;
-  letter-spacing: -0.04em;
+  letter-spacing: -0.02em;
 }
 
 .player-bio,
@@ -1607,7 +1784,7 @@ body.team-roster-active .app {
   padding: 0.35rem 0.45rem 0.35rem 0;
   color: var(--ds-color-text-tertiary);
   font-size: 0.5rem;
-  font-weight: 750;
+  font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
@@ -1617,8 +1794,8 @@ body.team-roster-active .app {
   overflow: hidden;
   color: var(--ds-color-text-primary);
   font-size: 0.78rem;
-  font-weight: 850;
-  letter-spacing: -0.02em;
+  font-weight: 800;
+  letter-spacing: -0.012em;
   text-overflow: ellipsis;
   text-transform: none;
   white-space: nowrap;
@@ -1626,7 +1803,7 @@ body.team-roster-active .app {
 
 .team-cell span {
   color: var(--ds-color-text-primary);
-  font-weight: 750;
+  font-weight: 700;
 }
 
 .table-crest {
@@ -1636,7 +1813,7 @@ body.team-roster-active .app {
 
 .group-table .pts {
   color: var(--ds-color-text-primary);
-  font-weight: 900;
+  font-weight: 800;
 }
 
 .form-badge {
@@ -1647,7 +1824,7 @@ body.team-roster-active .app {
   border: 1px solid var(--ds-color-border-default);
   border-radius: 50%;
   font-size: 0.52rem;
-  font-weight: 850;
+  font-weight: 800;
 }
 
 .form-badge--w {
@@ -1687,24 +1864,24 @@ body.team-roster-active .app {
   margin-bottom: 0.5rem;
   color: var(--ds-color-brand);
   font-size: 0.63rem;
-  font-weight: 850;
-  letter-spacing: 0.12em;
+  font-weight: 800;
+  letter-spacing: 0.075em;
   text-transform: uppercase;
 }
 
 .bracket-view-header h1 {
   color: var(--ds-color-text-primary);
   font-size: clamp(2.5rem, 6vw, 4.75rem);
-  font-weight: 900;
+  font-weight: 800;
   line-height: 0.9;
-  letter-spacing: -0.075em;
+  letter-spacing: -0.025em;
 }
 
 .bracket-view-header p {
   padding-bottom: 0.15rem;
   color: var(--ds-color-text-tertiary);
   font-size: 0.68rem;
-  font-weight: 750;
+  font-weight: 700;
   white-space: nowrap;
 }
 
@@ -1738,7 +1915,7 @@ body.team-roster-active .app {
   padding-bottom: 1.1rem;
   color: var(--ds-color-text-primary);
   font-size: 0.72rem;
-  font-weight: 850;
+  font-weight: 800;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   text-align: left;
@@ -1811,7 +1988,7 @@ body.team-roster-active .app {
 
 .bm-score {
   color: var(--ds-color-text-primary);
-  font-weight: 900;
+  font-weight: 800;
 }
 
 .bm-divider {
@@ -1848,7 +2025,7 @@ body.team-roster-active .app {
 .bracket-third-label {
   color: var(--ds-color-text-primary);
   font-size: 0.7rem;
-  font-weight: 850;
+  font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -1920,8 +2097,8 @@ body.team-roster-active .app {
 .modal-score {
   color: var(--ds-color-text-primary);
   font-size: clamp(2.5rem, 8vw, 4.5rem);
-  font-weight: 900;
-  letter-spacing: -0.1em;
+  font-weight: 800;
+  letter-spacing: -0.03em;
 }
 
 .modal-spoiler-reveal {
@@ -1938,7 +2115,7 @@ body.team-roster-active .app {
 .modal-kickoff {
   color: var(--ds-color-text-primary);
   font-size: clamp(1.5rem, 5vw, 2.5rem);
-  font-weight: 850;
+  font-weight: 800;
 }
 
 .modal-badge {
@@ -1965,8 +2142,8 @@ body.team-roster-active .app {
 }
 
 .modal-squad-title {
-  font-weight: 850;
-  letter-spacing: -0.025em;
+  font-weight: 800;
+  letter-spacing: -0.012em;
 }
 
 .modal-divider {
@@ -1987,7 +2164,7 @@ body.team-roster-active .app {
 }
 
 .squad-position-label {
-  letter-spacing: 0.1em;
+  letter-spacing: 0.07em;
 }
 
 /* Feedback, footer, admin */
@@ -2000,7 +2177,7 @@ body.team-roster-active .app {
   background: var(--ds-color-bg-subtle);
   border: 1px dashed var(--ds-color-border-strong);
   border-radius: var(--ds-radius-lg);
-  font-weight: 650;
+  font-weight: 600;
   text-align: center;
 }
 
@@ -2036,8 +2213,8 @@ body.team-roster-active .app {
 .admin-title {
   color: var(--ds-color-text-primary);
   font-size: clamp(2.5rem, 8vw, 5rem);
-  font-weight: 900;
-  letter-spacing: -0.075em;
+  font-weight: 800;
+  letter-spacing: -0.025em;
 }
 
 .admin-form,
@@ -2077,8 +2254,8 @@ body.team-roster-active .app {
 
 .admin-stat-value {
   color: var(--ds-color-text-primary);
-  font-weight: 900;
-  letter-spacing: -0.06em;
+  font-weight: 800;
+  letter-spacing: -0.025em;
 }
 
 .admin-stat-label,
@@ -2112,7 +2289,7 @@ body.team-roster-active .app {
 
   .welcome-content {
     align-content: start;
-    padding-top: 18vh;
+    padding-top: 8vh;
   }
 
   .welcome-content h1 {
@@ -2216,10 +2393,6 @@ body.team-roster-active .app {
 
   .teams-directory-grid {
     grid-template-columns: 1fr;
-  }
-
-  .group-table {
-    height: 24rem;
   }
 
   .team-directory-card {
@@ -2342,8 +2515,8 @@ body.team-roster-active .app {
 }
 
 /* Flat visual contract: legacy selectors must never restore elevation. */
-.match-card[role="button"]:hover,
-.match-card[role="button"]:focus-visible,
+.match-card:hover,
+.match-card:focus-within,
 .bm[role="button"]:hover,
 .bm[role="button"]:focus-visible,
 .group-table:hover,

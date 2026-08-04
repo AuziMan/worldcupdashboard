@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 718 465" role="img" aria-labelledby="title">
+  <title id="title">GAMEFOLD</title>
+  <style>.light{display:block}.dark{display:none}@media(prefers-color-scheme:dark){.light{display:none}.dark{display:block}}</style>
+  <image class="light" href="gamefold-logo-black.png" width="718" height="465" preserveAspectRatio="xMidYMid meet"/>
+  <image class="dark" href="gamefold-logo-white.png" width="718" height="465" preserveAspectRatio="xMidYMid meet"/>
+</svg>

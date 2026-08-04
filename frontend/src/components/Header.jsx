@@ -2,6 +2,7 @@ import { House, RefreshCw } from 'lucide-react'
 import ThemeToggle from './ThemeToggle'
 import { Button } from './ui/Button'
 import SpoilerToggle from './SpoilerToggle'
+import { Tooltip } from './ui/Tooltip'
 
 export default function Header({ league, lastFetched, onRefresh, loading, onHome }) {
   const formatted = lastFetched
@@ -22,17 +23,21 @@ export default function Header({ league, lastFetched, onRefresh, loading, onHome
         </div>
         <div className="header-actions">
           {formatted && (
-            <span className="last-updated"><i /> Updated {formatted}</span>
+            <span className="last-updated" role="status"><i /> Updated {formatted}</span>
           )}
-          <Button variant="secondary" size="icon" onClick={onHome} aria-label="All sports" title="All sports">
-            <House aria-hidden="true" />
-          </Button>
+          <Tooltip content="All sports">
+            <Button variant="secondary" size="icon" onClick={onHome} aria-label="Go to all sports">
+              <House aria-hidden="true" />
+            </Button>
+          </Tooltip>
           <SpoilerToggle />
           <ThemeToggle />
-          <Button className="refresh-btn" onClick={onRefresh} disabled={loading}>
-            <RefreshCw className={loading ? 'is-spinning' : ''} aria-hidden="true" />
-            <span>{loading ? 'Updating' : 'Refresh'}</span>
-          </Button>
+          <Tooltip content="Refresh scores and standings" disabled={loading}>
+            <Button className="refresh-btn" onClick={onRefresh} disabled={loading} aria-label={loading ? 'Updating match data' : 'Refresh match data'}>
+              <RefreshCw className={loading ? 'is-spinning' : ''} aria-hidden="true" />
+              <span>{loading ? 'Updating' : 'Refresh'}</span>
+            </Button>
+          </Tooltip>
         </div>
       </div>
     </header>
