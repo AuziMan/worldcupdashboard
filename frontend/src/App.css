@@ -355,6 +355,39 @@
   white-space: nowrap;
 }
 
+.fighter-photo {
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--border);
+}
+
+.fighter-record {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+}
+
+.fighter-placeholder svg {
+  width: 60%;
+  height: 60%;
+}
+
+.table-crest-placeholder {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.table-crest-placeholder svg {
+  width: 70%;
+  height: 70%;
+}
+
 
 .match-vs {
   font-size: 0.85rem;
