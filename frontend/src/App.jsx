@@ -267,13 +267,12 @@ export default function App() {
   if (isAdmin) return <><Seo title="Admin | GAMEFOLD" robots="noindex, nofollow" /><AdminPanel /></>
   if (!sport) return <><Seo title="GAMEFOLD — Live Sports Scores, Fixtures & Standings" /><HomePage onSelectSport={selectSport} /></>
   if (sport === 'soccer') return <SoccerDashboard onHome={goHome} />
+  if (sport === 'mlb') return <SingleSportDashboard leagueKey="mlb" config={MLB_LEAGUE} onHome={goHome} />
+  if (sport === 'nba') return <SingleSportDashboard leagueKey="nba" config={NBA_LEAGUE} onHome={goHome} />
   return (
     <>
       <Seo title={`${sport.toUpperCase()} Scores — Coming Soon`} description={`${sport.toUpperCase()} scores, schedules, standings, and postseason coverage are coming to GAMEFOLD.`} />
       <ComingSoonPage sport={sport} onHome={goHome} />
     </>
   )
-  if (sport === 'mlb') return <SingleSportDashboard leagueKey="mlb" config={MLB_LEAGUE} onHome={goHome} />
-  if (sport === 'nba') return <SingleSportDashboard leagueKey="nba" config={NBA_LEAGUE} onHome={goHome} />
-  return <ComingSoonPage sport={sport} onHome={goHome} />
 }
