@@ -60,8 +60,12 @@ function MatchCard({ match, onClick, showProgress = true }) {
   // or wrong-looking number.
   const scoreUnavailable = (isLive || isFinished) && !hasScore
 
+  // Sports without a fixed-duration clock (e.g. baseball) report a "period"
+  // string (innings) instead of a minute count — prefer that when present.
   // Elapsed wall-clock minutes since kickoff (115 = 45' + 15' HT + 45' + hydration breaks)
-  const elapsedMinutes = isLive
+  // is only a meaningful estimate for fixed-duration sports, so it's skipped
+  // whenever a period is available.
+  const elapsedMinutes = isLive && !period
     ? (minute ?? Math.round((Date.now() - kickoff) / 60000))
     : null
   const progressPct = showProgress && (status === 'IN_PLAY' || status === 'LIVE') && elapsedMinutes != null
@@ -100,7 +104,8 @@ function MatchCard({ match, onClick, showProgress = true }) {
       />
       <div className="match-meta">
         <span className={`match-status match-status--${status?.toLowerCase()}`}>{statusLabel}</span>
-        {isLive && elapsedMinutes != null && <span className="match-minute" aria-label={`${elapsedMinutes} minutes elapsed`}>{elapsedMinutes}′</span>}
+        {isLive && period && <span className="match-minute">{period}</span>}
+        {isLive && !period && elapsedMinutes != null && <span className="match-minute" aria-label={`${elapsedMinutes} minutes elapsed`}>{elapsedMinutes}′</span>}
         {group && <span className="match-group">{group.replace('GROUP_', 'Group ')}</span>}
       </div>
 
