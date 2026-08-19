@@ -68,6 +68,21 @@ const NBA_LEAGUE = {
   accent: '#C8102E',
 }
 
+const NFL_LEAGUE = {
+  label: 'NFL',
+  name: 'National Football League',
+  subtitle: 'USA',
+  logo: SPORTS.nfl.logo,
+  // No Teams tab: ESPN's football roster endpoint returns athletes grouped
+  // by position ({position: "offense", items: [...]}) instead of the flat
+  // per-athlete list soccer/basketball/baseball return, so espn.team_detail()
+  // doesn't parse it — rather than build a football-specific roster parser,
+  // just don't offer a squad view for NFL yet.
+  tabs: ['Matches', 'Standings'],
+  attribution: 'ESPN',
+  accent: '#013369',
+}
+
 const UFC_LEAGUE = {
   label: 'UFC',
   name: 'Ultimate Fighting Championship',
@@ -308,7 +323,7 @@ function UfcDashboard({ onHome }) {
 
 function sportFromHash() {
   const value = window.location.hash.slice(1)
-  return ['soccer', 'mlb', 'nba', 'ufc'].includes(value) ? value : null
+  return ['soccer', 'mlb', 'nba', 'nfl', 'ufc'].includes(value) ? value : null
 }
 
 export default function App() {
@@ -343,6 +358,7 @@ export default function App() {
   if (sport === 'soccer') return <SoccerDashboard onHome={goHome} />
   if (sport === 'mlb') return <SingleSportDashboard leagueKey="mlb" config={MLB_LEAGUE} onHome={goHome} />
   if (sport === 'nba') return <SingleSportDashboard leagueKey="nba" config={NBA_LEAGUE} onHome={goHome} />
+  if (sport === 'nfl') return <SingleSportDashboard leagueKey="nfl" config={NFL_LEAGUE} onHome={goHome} />
   if (sport === 'ufc') return <UfcDashboard onHome={goHome} />
   return (
     <>

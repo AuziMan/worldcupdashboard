@@ -1,9 +1,10 @@
 """Generic ESPN site-api client — undocumented endpoints that power espn.com.
 No auth, no published rate limit. Sport-aware via ESPN_SPORTS (base URLs +
 the standings rank-stat key, which differs by sport — soccer uses "rank",
-basketball uses "playoffSeed"). Shared by two sport modules: sports/soccer.py
-(mls) and sports/nba.py (nba) — it's one HTTP client for two sport families
-on the same underlying API, not duplicated per sport.
+basketball and football use "playoffSeed"). Shared by three sport modules:
+sports/soccer.py (mls), sports/nba.py (nba), and sports/nfl.py (nfl) — it's
+one HTTP client for three sport families on the same underlying API, not
+duplicated per sport.
 
 Normalizes ESPN's JSON into the exact shape providers/football_data.py
 already returns, so routes/sports code doesn't need to know which provider
@@ -23,6 +24,11 @@ ESPN_SPORTS = {
     "basketball": {
         "base": "https://site.api.espn.com/apis/site/v2/sports/basketball",
         "standings_base": "https://site.api.espn.com/apis/v2/sports/basketball",
+        "rank_key": "playoffSeed",
+    },
+    "football": {
+        "base": "https://site.api.espn.com/apis/site/v2/sports/football",
+        "standings_base": "https://site.api.espn.com/apis/v2/sports/football",
         "rank_key": "playoffSeed",
     },
 }
@@ -125,9 +131,9 @@ def standings(sport: str, code: str) -> dict:
             stats = {s.get("name"): s.get("value") for s in entry.get("stats", [])}
             wins = int(stats.get("wins", 0))
             losses = int(stats.get("losses", 0))
-            # Some sports (basketball) don't have a "points" stat that means
-            # anything standard — wins is the closest sortable/displayable analog.
-            points = wins if sport == "basketball" else int(stats.get("points", 0))
+            # Some sports (basketball, football) don't have a "points" stat that
+            # means anything standard — wins is the closest sortable/displayable analog.
+            points = wins if sport in ("basketball", "football") else int(stats.get("points", 0))
             table.append({
                 "position": int(stats.get(cfg["rank_key"], 0)),
                 "team": _team(entry.get("team", {})),

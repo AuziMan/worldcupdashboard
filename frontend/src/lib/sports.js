@@ -14,6 +14,11 @@ export const SPORTS = {
     detail: 'Live now',
     logo: 'https://a.espncdn.com/i/teamlogos/leagues/500/nba.png',
   },
+  nfl: {
+    label: 'NFL',
+    detail: 'Live now',
+    logo: 'https://a.espncdn.com/i/teamlogos/leagues/500/nfl.png',
+  },
   ufc: {
     label: 'UFC',
     detail: 'Live now',
