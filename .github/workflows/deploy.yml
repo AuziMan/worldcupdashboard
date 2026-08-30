@@ -39,7 +39,7 @@ jobs:
         working-directory: frontend
         run: npm run build
         env:
-          VITE_BASE_PATH: /worldcupdashboard/
+          VITE_BASE_PATH: /
           VITE_API_URL: ${{ secrets.VITE_API_URL }}
 
       - name: Upload Pages artifact
