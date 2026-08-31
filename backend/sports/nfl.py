@@ -5,13 +5,11 @@ per conference (AFC/NFC); ESPN's default standings endpoint doesn't break
 teams out by division, so neither do we (same simplification already made
 for nba's conference-only standings).
 
-fetch_team_detail is overridden to return an empty stub rather than call
-espn.team_detail(): ESPN's football roster endpoint groups athletes by
-position (`{"position": "offense", "items": [...]}`) instead of returning
-the flat per-athlete list soccer/basketball/baseball rosters use, so
-espn.team_detail()'s parsing doesn't apply — same empty-stub approach
-sports/ufc.py takes for its missing roster endpoint. The frontend's NFL
-config has no Teams tab, so this only guards the raw API route.
+fetch_team_detail calls espn.football_team_detail() rather than the generic
+espn.team_detail(): ESPN's football roster endpoint groups athletes by unit
+(`{"position": "offense", "items": [...]}`) instead of returning the flat
+per-athlete list soccer/basketball/baseball rosters use, so team_detail()'s
+parsing doesn't apply — football_team_detail() flattens those groups instead.
 """
 
 from providers import espn
@@ -37,4 +35,5 @@ def fetch_teams(league: str = "nfl") -> dict:
 
 
 def fetch_team_detail(league: str, team_id) -> dict:
-    return {"coach": None, "squad": []}
+    cfg = LEAGUES[league]
+    return espn.football_team_detail(cfg["code"], team_id)

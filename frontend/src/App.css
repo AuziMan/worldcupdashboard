@@ -355,6 +355,50 @@
   white-space: nowrap;
 }
 
+.favorite-star {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  border: none;
+  background: none;
+  color: var(--ds-color-text-tertiary, var(--text-secondary));
+  cursor: pointer;
+  transition: color 0.15s, transform 0.15s;
+}
+
+.favorite-star:hover {
+  color: var(--ds-color-warning, #f59e0b);
+  transform: scale(1.1);
+}
+
+.favorite-star svg {
+  width: 14px;
+  height: 14px;
+}
+
+.favorite-star--active {
+  color: var(--ds-color-warning, #f59e0b);
+}
+
+/* Positioned as a corner badge on team directory cards rather than inline
+   with the crest/name column. */
+.favorite-star--card {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 1;
+}
+
+.favorite-star--card svg {
+  width: 18px;
+  height: 18px;
+}
+
+.team-cell .favorite-star {
+  margin-left: auto;
+}
+
 .fighter-photo {
   border-radius: 50%;
   object-fit: cover;

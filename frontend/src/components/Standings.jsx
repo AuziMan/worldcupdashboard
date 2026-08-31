@@ -1,4 +1,5 @@
 import { getTeamColor } from '../data/teamColors'
+import FavoriteStar from './FavoriteStar'
 
 function buildFormMap(allMatches) {
   const finished = (allMatches || [])
@@ -27,7 +28,7 @@ function buildFormMap(allMatches) {
   return map
 }
 
-function GroupTable({ group, formMap, highlightTop }) {
+function GroupTable({ group, formMap, highlightTop, league }) {
   return (
     <div className="group-table">
       <h3 className="group-name">{group.group || 'Table'}</h3>
@@ -60,6 +61,7 @@ function GroupTable({ group, formMap, highlightTop }) {
                   <img src={row.team.crest} alt={row.team.shortName} className="table-crest" />
                 )}
                 <span>{row.team.shortName || row.team.name}</span>
+                {league && <FavoriteStar league={league} team={row.team} />}
               </td>
               <td>{row.playedGames}</td>
               <td>{row.won}</td>
@@ -84,7 +86,7 @@ function GroupTable({ group, formMap, highlightTop }) {
   )
 }
 
-export default function Standings({ standings, matches, highlightTop = true }) {
+export default function Standings({ standings, matches, highlightTop = true, league }) {
   const groups = standings?.standings
 
   if (!groups?.length) {
@@ -98,7 +100,7 @@ export default function Standings({ standings, matches, highlightTop = true }) {
       <h2 className="section-title">{highlightTop ? 'Group Stage Standings' : 'Standings'}</h2>
       <div className="standings-grid">
         {groups.map((g, i) => (
-          <GroupTable key={i} group={g} formMap={formMap} highlightTop={highlightTop} />
+          <GroupTable key={i} group={g} formMap={formMap} highlightTop={highlightTop} league={league} />
         ))}
       </div>
     </div>
