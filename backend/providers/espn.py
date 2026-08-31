@@ -82,7 +82,14 @@ def matches(sport: str, code: str) -> dict:
     now = datetime.now(timezone.utc)
     start = (now - timedelta(days=45)).strftime("%Y%m%d")
     end = (now + timedelta(days=45)).strftime("%Y%m%d")
-    data = _get(f"{cfg['base']}/{code}/scoreboard?dates={start}-{end}")
+    # ESPN's scoreboard endpoint silently caps at 100 events regardless of the
+    # requested date range and returns them in chronological order — for a
+    # busy league (e.g. MLS) with >100 already-played games earlier in the
+    # 90-day window, that cap gets eaten entirely by the past, so every
+    # upcoming/SCHEDULED fixture quietly gets truncated off. `limit=1000`
+    # lifts that cap; confirmed against the raw endpoint (100 events without
+    # it, 219 — including SCHEDULED ones — with it).
+    data = _get(f"{cfg['base']}/{code}/scoreboard?dates={start}-{end}&limit=1000")
 
     results = []
     for event in data.get("events", []):
@@ -202,4 +209,45 @@ def team_detail(sport: str, code: str, team_id) -> dict:
             "weight": athlete.get("displayWeight"),
             "stats": selected_stats,
         })
+    return {"coach": None, "squad": squad}
+
+
+def football_team_detail(code: str, team_id) -> dict:
+    """Football's roster groups athletes by unit (offense/defense/specialTeam/
+    injuredReserveOrOut/suspended/practiceSquad) instead of returning the flat
+    per-athlete list soccer/basketball/baseball rosters use — team_detail()
+    can't parse that shape (see module docstring), which is why sports/nfl.py
+    used to stub this out entirely. This flattens every group into one squad
+    list, keyed by each athlete's own specific position (e.g. "Quarterback",
+    "Guard") rather than the coarse group label, same as soccer/basketball
+    already do. No citizenship field exists on a football athlete, so
+    birthPlace.country stands in for nationality; college and years of
+    NFL experience — both present and football-relevant, unlike soccer's
+    goals/assists — become the roster's "stats" instead."""
+    cfg = ESPN_SPORTS["football"]
+    data = _get(f"{cfg['base']}/{code}/teams/{team_id}/roster")
+    squad = []
+    for group in data.get("athletes", []):
+        for athlete in group.get("items", []):
+            college = athlete.get("college") or {}
+            experience = athlete.get("experience") or {}
+            stats = {}
+            if college.get("name"):
+                stats["College"] = college["name"]
+            if experience.get("years") is not None:
+                stats["NFL experience"] = f"{experience['years']} yrs"
+
+            squad.append({
+                "id": athlete.get("id"),
+                "name": athlete.get("displayName"),
+                "position": (athlete.get("position") or {}).get("displayName"),
+                "photo": (athlete.get("headshot") or {}).get("href"),
+                "jersey": athlete.get("jersey"),
+                "age": athlete.get("age"),
+                "dateOfBirth": athlete.get("dateOfBirth"),
+                "nationality": (athlete.get("birthPlace") or {}).get("country"),
+                "height": athlete.get("displayHeight"),
+                "weight": athlete.get("displayWeight"),
+                "stats": stats,
+            })
     return {"coach": None, "squad": squad}

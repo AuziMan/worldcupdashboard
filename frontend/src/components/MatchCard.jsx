@@ -1,6 +1,7 @@
 import { memo } from 'react'
 import { getTeamColor } from '@/lib/teamColors'
 import { useSpoilers } from '@/providers/SpoilerProvider'
+import FavoriteStar from './FavoriteStar'
 
 const STATUS_LABELS = {
   SCHEDULED: 'Upcoming',
@@ -24,7 +25,7 @@ function formatCountdown(kickoff) {
   return 'soon'
 }
 
-function TeamSide({ team, isWinner }) {
+function TeamSide({ team, isWinner, league }) {
   return (
     <div className={`team-side${isWinner ? ' team-side--winner' : ''}`}>
       {team?.crest ? (
@@ -34,11 +35,12 @@ function TeamSide({ team, isWinner }) {
       )}
       <span className="team-name">{team?.shortName || team?.name || 'TBD'}</span>
       {isWinner && <span className="winner-label">Winner</span>}
+      {league && team?.id && <FavoriteStar league={league} team={team} />}
     </div>
   )
 }
 
-function MatchCard({ match, onClick, showProgress = true }) {
+function MatchCard({ match, onClick, showProgress = true, league }) {
   const { isScoreHidden, revealMatch } = useSpoilers()
   const { homeTeam, awayTeam, score, status, utcDate, stage, group, minute, period } = match
 
@@ -110,7 +112,7 @@ function MatchCard({ match, onClick, showProgress = true }) {
       </div>
 
       <div className="match-teams">
-        <TeamSide team={homeTeam} isWinner={isFinished && !spoilerHidden && homeWins} />
+        <TeamSide team={homeTeam} isWinner={isFinished && !spoilerHidden && homeWins} league={league} />
         <div className="match-vs">
           {spoilerHidden
             ? (
@@ -134,7 +136,7 @@ function MatchCard({ match, onClick, showProgress = true }) {
                 : kickoff.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
           }
         </div>
-        <TeamSide team={awayTeam} isWinner={isFinished && !spoilerHidden && awayWins} />
+        <TeamSide team={awayTeam} isWinner={isFinished && !spoilerHidden && awayWins} league={league} />
       </div>
 
       {progressPct !== null && (

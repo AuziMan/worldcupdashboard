@@ -1023,7 +1023,8 @@ body.team-roster-active .app {
   pointer-events: none;
 }
 
-.match-card .spoiler-reveal {
+.match-card .spoiler-reveal,
+.match-card .favorite-star {
   position: relative;
   z-index: 2;
   pointer-events: auto;

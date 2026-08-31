@@ -19,15 +19,6 @@ import './App.css'
 import './styles/redesign.css'
 
 const LEAGUES = {
-  wc: {
-    label: 'World Cup',
-    name: 'FIFA World Cup 2026',
-    subtitle: '48 teams · One champion',
-    logo: 'https://crests.football-data.org/wm26.png',
-    tabs: ['Matches', 'Teams', 'Standings', 'Bracket'],
-    attribution: 'football-data.org',
-    accent: '#F5A623',
-  },
   epl: {
     label: 'Premier League',
     name: 'Premier League',
@@ -45,6 +36,20 @@ const LEAGUES = {
     tabs: ['Matches', 'Teams', 'Standings'],
     attribution: 'ESPN',
     accent: '#00B140',
+  },
+  // Last in the switcher on purpose: WC 2026 finished July 19, 2026 — every
+  // match is FINISHED and there's nothing upcoming until WC 2030 fixtures
+  // populate under football-data.org's evergreen "WC" competition code (see
+  // sports/soccer.py). Keep the tab/bracket code intact rather than removing
+  // it — this comes back to life on its own once that data exists.
+  wc: {
+    label: 'World Cup',
+    name: 'FIFA World Cup 2026',
+    subtitle: '48 teams · One champion',
+    logo: 'https://crests.football-data.org/wm26.png',
+    tabs: ['Matches', 'Teams', 'Standings', 'Bracket'],
+    attribution: 'football-data.org',
+    accent: '#F5A623',
   },
 }
 
@@ -73,12 +78,7 @@ const NFL_LEAGUE = {
   name: 'National Football League',
   subtitle: 'USA',
   logo: SPORTS.nfl.logo,
-  // No Teams tab: ESPN's football roster endpoint returns athletes grouped
-  // by position ({position: "offense", items: [...]}) instead of the flat
-  // per-athlete list soccer/basketball/baseball return, so espn.team_detail()
-  // doesn't parse it — rather than build a football-specific roster parser,
-  // just don't offer a squad view for NFL yet.
-  tabs: ['Matches', 'Standings'],
+  tabs: ['Matches', 'Teams', 'Standings'],
   attribution: 'ESPN',
   accent: '#013369',
 }
@@ -104,7 +104,7 @@ const TAB_ICONS = {
 }
 
 function SoccerDashboard({ onHome }) {
-  const [league, setLeague] = useState('wc')
+  const [league, setLeague] = useState('epl')
   const [tab, setTab] = useState('Matches')
   const [selectedMatch, setSelectedMatch] = useState(null)
   const { matches, standings, loading, error, lastFetched, isLiveMode, refresh } = useLeagueData(league)
@@ -168,11 +168,11 @@ function SoccerDashboard({ onHome }) {
         )}
 
         {!loading && !error && tab === 'Matches' && (
-          <MatchSection matches={matches} onSelectMatch={setSelectedMatch} />
+          <MatchSection matches={matches} onSelectMatch={setSelectedMatch} league={league} />
         )}
 
         {!loading && !error && tab === 'Standings' && (
-          <Standings standings={standings} matches={matches} highlightTop={league === 'wc'} />
+          <Standings standings={standings} matches={matches} highlightTop={league === 'wc'} league={league} />
         )}
 
         {!loading && !error && tab === 'Teams' && (
@@ -236,11 +236,11 @@ function SingleSportDashboard({ leagueKey, config, onHome }) {
         )}
 
         {!loading && !error && tab === 'Matches' && (
-          <MatchSection matches={matches} onSelectMatch={setSelectedMatch} showProgress={false} />
+          <MatchSection matches={matches} onSelectMatch={setSelectedMatch} showProgress={false} league={leagueKey} />
         )}
 
         {!loading && !error && tab === 'Standings' && (
-          <Standings standings={standings} matches={matches} highlightTop={false} />
+          <Standings standings={standings} matches={matches} highlightTop={false} league={leagueKey} />
         )}
 
         {!loading && !error && tab === 'Teams' && (
