@@ -4,9 +4,9 @@ to the sport-specific module that knows how to fetch it — each sport module
 owns its own LEAGUES sub-dict; this just merges them for lookup.
 """
 
-from sports import mlb, nba, nfl, soccer, ufc
+from sports import f1, mlb, nba, nfl, soccer, ufc
 
-_MODULES = [soccer, nba, nfl, mlb, ufc]
+_MODULES = [soccer, nba, nfl, mlb, ufc, f1]
 
 LEAGUE_MODULE = {
     league: module

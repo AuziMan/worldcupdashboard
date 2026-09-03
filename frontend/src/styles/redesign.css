@@ -2132,6 +2132,170 @@ body.team-roster-active .app {
   border-color: var(--ds-color-live);
 }
 
+/* ── Race Modal (F1) ────────────────────────────── */
+.race-modal {
+  max-width: 40rem;
+}
+
+.race-modal-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding: clamp(3.5rem, 7vw, 5rem) clamp(1.25rem, 5vw, 3.5rem) 2rem;
+  text-align: center;
+  background: var(--ds-color-bg-subtle);
+  border-bottom: 1.5px solid var(--ds-color-border-default);
+}
+
+.race-modal-track {
+  width: 100%;
+  max-width: 22rem;
+  aspect-ratio: 16 / 9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.5rem;
+}
+
+.race-track-diagram {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 16px rgb(0 0 0 / 0.25));
+}
+
+/* OpenF1's circuit icon is dark line-art on a transparent background —
+   invert it in dark mode so it stays visible against a dark hero panel. */
+[data-theme="dark"] .race-track-diagram {
+  filter: drop-shadow(0 4px 16px rgb(0 0 0 / 0.4)) invert(1);
+}
+
+.race-modal-event-name {
+  color: var(--ds-color-text-secondary);
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.race-modal-circuit-name {
+  color: var(--ds-color-text-primary);
+  font-size: clamp(1.4rem, 4vw, 2rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.race-modal-circuit-stats {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.race-modal-circuit-stats span {
+  padding: 0.2rem 0.65rem;
+  color: var(--ds-color-text-secondary);
+  background: var(--ds-color-bg-surface);
+  border: 1px solid var(--ds-color-border-default);
+  border-radius: var(--ds-radius-full);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.race-modal-positions {
+  padding: 1.5rem clamp(1.25rem, 5vw, 3.5rem) 2rem;
+  background: var(--ds-color-bg-surface);
+}
+
+.race-modal-positions-title {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  margin-bottom: 0.75rem;
+  color: var(--ds-color-text-primary);
+  font-weight: 800;
+  letter-spacing: -0.012em;
+}
+
+.race-modal-positions-hint {
+  color: var(--ds-color-text-tertiary);
+  font-size: 0.68rem;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.race-position-list {
+  display: flex;
+  flex-direction: column;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.race-position-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.35rem 0.25rem;
+  border-bottom: 1px solid var(--ds-color-border-subtle);
+}
+
+.race-position-row--podium {
+  color: var(--ds-color-text-primary);
+  font-weight: 700;
+}
+
+.race-position-num {
+  width: 1.6rem;
+  color: var(--ds-color-text-tertiary);
+  font-weight: 700;
+  font-size: 0.82rem;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.race-position-team-dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: var(--ds-color-border-strong);
+  flex-shrink: 0;
+}
+
+.race-position-name {
+  flex: 1;
+  color: var(--ds-color-text-primary);
+  font-size: 0.85rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.race-position-tag {
+  color: var(--ds-color-danger);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.race-position-gap {
+  color: var(--ds-color-text-tertiary);
+  font-size: 0.76rem;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+.race-position-points {
+  min-width: 3.2rem;
+  color: var(--ds-color-text-secondary);
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-align: right;
+  flex-shrink: 0;
+}
+
 .modal-squads {
   background: var(--ds-color-bg-surface);
 }
