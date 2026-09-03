@@ -24,4 +24,9 @@ export const SPORTS = {
     detail: 'Live now',
     logo: 'https://a.espncdn.com/i/teamlogos/leagues/500/ufc.png',
   },
+  f1: {
+    label: 'F1',
+    detail: 'Live now',
+    logo: 'https://a.espncdn.com/i/teamlogos/leagues/500/f1.png',
+  },
 }

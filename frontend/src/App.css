@@ -415,6 +415,21 @@
   height: 60%;
 }
 
+.driver-photo {
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--border);
+}
+
+.driver-placeholder svg {
+  width: 60%;
+  height: 60%;
+}
+
+.constructor-swatch {
+  border-radius: 50%;
+}
+
 .table-crest-placeholder {
   width: 22px;
   height: 22px;
@@ -506,6 +521,102 @@
   font-size: 0.68rem;
   text-transform: capitalize;
   color: #555;
+}
+
+/* ── Meeting Group (F1 race weekend) ────────────── */
+.meeting-group {
+  margin-bottom: 8px;
+}
+
+.meeting-group-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-transform: none;
+  letter-spacing: normal;
+  font-size: 0.95rem;
+}
+
+.meeting-group-flag {
+  width: 20px;
+  height: 14px;
+  object-fit: cover;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.meeting-group-location {
+  color: var(--text-secondary);
+  font-weight: 500;
+  font-size: 0.78rem;
+}
+
+.session-grid {
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  margin-bottom: 20px;
+}
+
+/* ── Session Card (F1) ──────────────────────────── */
+.session-card {
+  position: relative;
+  padding: 12px;
+  gap: 8px;
+}
+
+.race-card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.session-card-bg {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+}
+
+.session-card-bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(155deg, color-mix(in srgb, var(--league-accent, var(--accent)) 22%, transparent) 0%, transparent 65%);
+}
+
+.session-card-track-bg {
+  position: absolute;
+  top: 50%;
+  left: 62%;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transform: translate(-50%, -50%) scale(1.7);
+  opacity: 0.18;
+  filter: brightness(0) saturate(100%);
+}
+
+[data-theme="dark"] .session-card-track-bg {
+  opacity: 0.28;
+  filter: brightness(0) saturate(100%) invert(1);
+}
+
+.session-card-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.session-card-icon {
+  width: 15px;
+  height: 15px;
+  color: var(--league-accent, var(--accent));
+  flex-shrink: 0;
+}
+
+.session-card-name {
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--text-primary);
 }
 
 /* ── Standings ──────────────────────────────────── */

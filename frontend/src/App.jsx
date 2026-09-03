@@ -11,8 +11,12 @@ import ComingSoonPage from './components/ComingSoonPage'
 import TeamsView from './components/TeamsView'
 import FightSection from './components/FightSection'
 import RankingsView from './components/RankingsView'
+import RaceSection from './components/RaceSection'
+import F1StandingsView from './components/F1StandingsView'
+import SessionModal from './components/SessionModal'
 import { useUfcData } from './hooks/useUfcData'
-import { CalendarDays, GitFork, ListOrdered, Swords, Table2, UsersRound } from 'lucide-react'
+import { useF1Data } from './hooks/useF1Data'
+import { CalendarDays, Flag, GitFork, ListOrdered, Swords, Table2, UsersRound } from 'lucide-react'
 import Seo from './components/Seo'
 import { SPORTS } from './lib/sports'
 import './App.css'
@@ -93,6 +97,16 @@ const UFC_LEAGUE = {
   accent: '#D20A0A',
 }
 
+const F1_LEAGUE = {
+  label: 'F1',
+  name: 'Formula 1',
+  subtitle: 'Worldwide',
+  logo: SPORTS.f1.logo,
+  tabs: ['Races', 'Standings'],
+  attribution: 'ESPN',
+  accent: '#E10600',
+}
+
 const API_BASE = import.meta.env.VITE_API_URL || ''
 const TAB_ICONS = {
   Matches: CalendarDays,
@@ -101,6 +115,7 @@ const TAB_ICONS = {
   Bracket: GitFork,
   Events: Swords,
   Rankings: ListOrdered,
+  Races: Flag,
 }
 
 function SoccerDashboard({ onHome }) {
@@ -321,9 +336,73 @@ function UfcDashboard({ onHome }) {
   )
 }
 
+function F1Dashboard({ onHome }) {
+  const [tab, setTab] = useState('Races')
+  const [selectedRace, setSelectedRace] = useState(null)
+  const { matches, standings, loading, error, lastFetched, isLiveMode, refresh } = useF1Data()
+
+  return (
+    <div className="app" style={{ '--league-accent': F1_LEAGUE.accent }}>
+      <Header league={F1_LEAGUE} lastFetched={lastFetched} onRefresh={refresh} loading={loading} onHome={onHome} />
+
+      <nav className="tab-nav">
+        {F1_LEAGUE.tabs.map(t => {
+          const TabIcon = TAB_ICONS[t]
+          return (
+            <button
+              key={t}
+              className={`tab-btn ${tab === t ? 'tab-btn--active' : ''}`}
+              onClick={() => setTab(t)}
+              aria-current={tab === t ? 'page' : undefined}
+            >
+              <TabIcon aria-hidden="true" />
+              {t}
+            </button>
+          )
+        })}
+      </nav>
+
+      <main className="main-content">
+        {error && (
+          <div className="error-banner">
+            <strong>Having trouble loading race data.</strong>
+            <p>The server may be waking up — please wait a moment and try refreshing.</p>
+          </div>
+        )}
+
+        {loading && !matches && (
+          <div className="loading-state">
+            <div className="spinner" />
+            <p>Loading {F1_LEAGUE.name} data…</p>
+          </div>
+        )}
+
+        {!loading && !error && tab === 'Races' && (
+          <RaceSection matches={matches} onSelectMatch={setSelectedRace} />
+        )}
+
+        {!loading && !error && tab === 'Standings' && (
+          <F1StandingsView standings={standings} />
+        )}
+      </main>
+
+      <footer className="footer">
+        <p>
+          Data provided by {F1_LEAGUE.attribution} ·{' '}
+          Refreshes every minute (9 AM – 9 PM){isLiveMode ? ' · Live mode active' : ''}
+        </p>
+      </footer>
+
+      {selectedRace && (
+        <SessionModal match={selectedRace} onClose={() => setSelectedRace(null)} />
+      )}
+    </div>
+  )
+}
+
 function sportFromHash() {
   const value = window.location.hash.slice(1)
-  return ['soccer', 'mlb', 'nba', 'nfl', 'ufc'].includes(value) ? value : null
+  return ['soccer', 'mlb', 'nba', 'nfl', 'ufc', 'f1'].includes(value) ? value : null
 }
 
 export default function App() {
@@ -360,6 +439,7 @@ export default function App() {
   if (sport === 'nba') return <SingleSportDashboard leagueKey="nba" config={NBA_LEAGUE} onHome={goHome} />
   if (sport === 'nfl') return <SingleSportDashboard leagueKey="nfl" config={NFL_LEAGUE} onHome={goHome} />
   if (sport === 'ufc') return <UfcDashboard onHome={goHome} />
+  if (sport === 'f1') return <F1Dashboard onHome={goHome} />
   return (
     <>
       <Seo title={`${sport.toUpperCase()} Scores — Coming Soon`} description={`${sport.toUpperCase()} scores, schedules, standings, and postseason coverage are coming to GAMEFOLD.`} />

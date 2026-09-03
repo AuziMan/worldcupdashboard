@@ -8,7 +8,7 @@ from flask import Flask
 
 from config import ALLOWED_ORIGINS
 from extensions import init_cors, limiter
-from routes import analytics, leagues, meta
+from routes import analytics, f1, leagues, meta
 
 
 def create_app():
@@ -26,6 +26,7 @@ def create_app():
     app.register_blueprint(leagues.bp)
     app.register_blueprint(meta.bp)
     app.register_blueprint(analytics.bp)
+    app.register_blueprint(f1.bp)
 
     return app
 
