@@ -13,9 +13,19 @@ children[0] is Driver standings, children[1] is Constructor standings, both
 with athlete/team objects fully embedded (same "standings_base" shape
 providers/espn.py already parses for soccer/NBA/NFL, just a different host
 path).
+
+Driver *photos* are the one field this deliberately does NOT take from
+ESPN, even though ESPN's response is otherwise used as-is: ESPN doesn't
+embed a headshot URL here, only an athlete id, so the natural move is to
+guess ESPN's own headshot CDN path from it — but that path 404s for any
+driver ESPN hasn't uploaded a photo for (most of the grid's newer/rookie
+drivers, confirmed by hand). openf1.driver_photos() gives a real,
+consistently-populated headshot per driver instead, joined on by name.
 """
 
 import requests
+
+from providers import openf1 as openf1_provider
 
 ESPN_F1_STANDINGS_URL = "https://site.api.espn.com/apis/v2/sports/racing/f1/standings"
 
@@ -36,6 +46,7 @@ def _points(stats: dict) -> int:
 
 def standings() -> dict:
     data = _get(ESPN_F1_STANDINGS_URL)
+    photos = openf1_provider.driver_photos()
 
     groups = []
     for child in data.get("children", []):
@@ -53,7 +64,7 @@ def standings() -> dict:
                     "name": athlete.get("displayName"),
                     "shortName": athlete.get("shortName"),
                     "flag": (athlete.get("flag") or {}).get("href"),
-                    "photo": f"https://a.espncdn.com/i/headshots/f1/players/full/{athlete.get('id')}.png" if athlete.get("id") else None,
+                    "photo": photos.get(openf1_provider.normalize_name(athlete.get("displayName"))),
                 }
             elif "team" in entry:
                 team = entry["team"]
