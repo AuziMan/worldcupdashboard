@@ -1,10 +1,16 @@
 """Generic ESPN site-api client — undocumented endpoints that power espn.com.
 No auth, no published rate limit. Sport-aware via ESPN_SPORTS (base URLs +
 the standings rank-stat key, which differs by sport — soccer uses "rank",
-basketball and football use "playoffSeed"). Shared by three sport modules:
-sports/soccer.py (mls), sports/nba.py (nba), and sports/nfl.py (nfl) — it's
-one HTTP client for three sport families on the same underlying API, not
-duplicated per sport.
+basketball and football use "playoffSeed"). Shared by four sport modules:
+sports/soccer.py (mls), sports/nba.py (nba), sports/nfl.py (nfl), and
+sports/ncaaf.py (ncaaf) — it's one HTTP client for four sport families on
+the same underlying API, not duplicated per sport.
+
+College football (ncaaf) reuses "football"'s ESPN_SPORTS entry with
+code="college-football" for matches() only — its standings/teams/roster
+shapes each differ enough from the generic parsing (and from NFL's own
+football_team_detail()) to need their own college_football_*() functions
+below; see each one's docstring for why.
 
 Normalizes ESPN's JSON into the exact shape providers/football_data.py
 already returns, so routes/sports code doesn't need to know which provider
@@ -209,6 +215,164 @@ def team_detail(sport: str, code: str, team_id) -> dict:
             "weight": athlete.get("displayWeight"),
             "stats": selected_stats,
         })
+    return {"coach": None, "squad": squad}
+
+
+COLLEGE_FOOTBALL_BASE = f"{ESPN_SPORTS['football']['base']}/college-football"
+COLLEGE_FOOTBALL_STANDINGS_URL = (
+    f"{ESPN_SPORTS['football']['standings_base']}/college-football/standings"
+)
+COLLEGE_FOOTBALL_RANKINGS_URL = f"{COLLEGE_FOOTBALL_BASE}/rankings"
+
+
+def _college_football_ap_ranks() -> dict:
+    """team id -> current AP Top 25 rank. This is the one enrichment college
+    football gets that no other sport here has — a national ranking
+    independent of any team's own conference standings. ESPN's /rankings
+    endpoint also carries a Coaches poll plus FCS/D-II polls; AP is the one
+    most fans mean by "the rankings", so that's the only one surfaced.
+    Teams outside the top 25 (the overwhelming majority) simply get no
+    "rank" key at all — there's no "NR" badge worth rendering for them."""
+    data = _get(COLLEGE_FOOTBALL_RANKINGS_URL)
+    ap_poll = next(
+        (p for p in data.get("rankings", []) if p.get("name") == "AP Top 25"),
+        None,
+    )
+    if not ap_poll:
+        return {}
+    return {
+        r["team"]["id"]: r["current"]
+        for r in ap_poll.get("ranks", [])
+        if r.get("team", {}).get("id") is not None
+    }
+
+
+def _walk_standings_groups(node: dict):
+    """Yield (group_name, entries) for every node in a standings tree that
+    carries its own entries. Most college football conferences report a flat
+    list directly under themselves, but at least one (Sun Belt) reports zero
+    entries at the conference level and nests two divisions ("Sun Belt -
+    East"/"-West") one level deeper instead — recursing means both shapes
+    come out as plain (name, entries) groups with no special-casing."""
+    standings_block = node.get("standings") or {}
+    entries = standings_block.get("entries")
+    if entries:
+        yield node.get("name"), entries
+    for child in node.get("children", []):
+        yield from _walk_standings_groups(child)
+
+
+def college_football_standings() -> dict:
+    """ESPN's college football standings entries can't be parsed by the
+    generic standings() above: each entry repeats stat *names* ("wins",
+    "pointsFor", ...) once per record split (overall/home/away/vs-division/
+    vs-conference/vs-ranked-opponents/...), so a dict keyed by name silently
+    keeps whichever split happened to come last (mostly zeroes) instead of
+    the season totals. Keying by each stat's `type` instead — unique per
+    split, e.g. "wins" vs "homerecord_wins" — picks out the right one. There
+    is also no explicit "losses" stat at all; it only exists baked into the
+    "overall" split's "W-L" summary string, so it's parsed out of that.
+    """
+    data = _get(COLLEGE_FOOTBALL_STANDINGS_URL)
+    rank_key = ESPN_SPORTS["football"]["rank_key"].lower()
+    ap_ranks = _college_football_ap_ranks()
+
+    groups = []
+    for name, entries in _walk_standings_groups(data):
+        table = []
+        for entry in entries:
+            stat_by_type = {s.get("type"): s for s in entry.get("stats", [])}
+            wins = int(stat_by_type.get("wins", {}).get("value") or 0)
+            record = (stat_by_type.get("total", {}).get("summary") or "0-0").split("-")
+            losses = int(record[1]) if len(record) > 1 and record[1].strip().isdigit() else 0
+            team = _team(entry.get("team", {}))
+            if team.get("id") in ap_ranks:
+                team["rank"] = ap_ranks[team["id"]]
+            table.append({
+                "position": int(stat_by_type.get(rank_key, {}).get("value") or 0),
+                "team": team,
+                "playedGames": wins + losses,
+                "won": wins,
+                "draw": 0,
+                "lost": losses,
+                "goalsFor": int(stat_by_type.get("pointsfor", {}).get("value") or 0),
+                "goalsAgainst": int(stat_by_type.get("pointsagainst", {}).get("value") or 0),
+                "goalDifference": int(stat_by_type.get("pointdifferential", {}).get("value") or 0),
+                "points": wins,
+            })
+        table.sort(key=lambda row: row["position"])
+        groups.append({"group": name, "table": table})
+
+    return {"standings": groups}
+
+
+def college_football_teams() -> dict:
+    """ESPN's plain /teams endpoint returns every college football division
+    at once (FBS, FCS, D2, D3 — 761 teams) with no groups= filter that
+    actually narrows it, which is far more than "college football" means to
+    a visitor here. The standings endpoint is already properly scoped to
+    FBS's ~11 conferences, so the team list is derived from that tree
+    instead (~138 teams) rather than the noisy /teams response."""
+    data = _get(COLLEGE_FOOTBALL_STANDINGS_URL)
+    ap_ranks = _college_football_ap_ranks()
+    seen = {}
+    for _, entries in _walk_standings_groups(data):
+        for entry in entries:
+            team = _team(entry.get("team", {}))
+            if team.get("id"):
+                if team["id"] in ap_ranks:
+                    team["rank"] = ap_ranks[team["id"]]
+                seen[team["id"]] = team
+    return {"teams": sorted(seen.values(), key=lambda t: t.get("name") or "")}
+
+
+def college_football_matches() -> dict:
+    """Adds each team's current AP Top 25 rank on top of the generic
+    matches() shape above — the same enrichment college_football_standings()
+    and college_football_teams() do, extended to the scoreboard. Lives here
+    rather than in matches() itself since no other sport it's shared with
+    (soccer/basketball/NFL) has a comparable national ranking to attach."""
+    data = matches("football", "college-football")
+    ap_ranks = _college_football_ap_ranks()
+    if ap_ranks:
+        for event in data["matches"]:
+            for side in ("homeTeam", "awayTeam"):
+                team = event.get(side) or {}
+                if team.get("id") in ap_ranks:
+                    team["rank"] = ap_ranks[team["id"]]
+    return data
+
+
+def college_football_team_detail(team_id) -> dict:
+    """Reuses football's grouped-by-unit roster shape (see
+    football_team_detail above), but can't reuse its labels: a college
+    athlete's "college" field is just the team whose roster we're already
+    viewing (not an alma mater, unlike an NFL player's), and "experience" is
+    a class year (Freshman/Sophomore/Junior/Senior) rather than professional
+    experience — so this surfaces class year as "Class" and drops the
+    self-referential college name instead."""
+    data = _get(f"{COLLEGE_FOOTBALL_BASE}/teams/{team_id}/roster")
+    squad = []
+    for group in data.get("athletes", []):
+        for athlete in group.get("items", []):
+            experience = athlete.get("experience") or {}
+            stats = {}
+            if experience.get("displayValue"):
+                stats["Class"] = experience["displayValue"]
+
+            squad.append({
+                "id": athlete.get("id"),
+                "name": athlete.get("displayName"),
+                "position": (athlete.get("position") or {}).get("displayName"),
+                "photo": (athlete.get("headshot") or {}).get("href"),
+                "jersey": athlete.get("jersey"),
+                "age": athlete.get("age"),
+                "dateOfBirth": athlete.get("dateOfBirth"),
+                "nationality": (athlete.get("birthPlace") or {}).get("country"),
+                "height": athlete.get("displayHeight"),
+                "weight": athlete.get("displayWeight"),
+                "stats": stats,
+            })
     return {"coach": None, "squad": squad}
 
 

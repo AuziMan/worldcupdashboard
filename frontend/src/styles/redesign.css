@@ -271,10 +271,8 @@ span {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   margin-top: clamp(2rem, 4.5vw, 3rem);
-  background: var(--ds-color-border-default);
   border: 1px solid var(--ds-color-border-default);
   border-radius: var(--ds-radius-lg);
-  gap: 1px;
   overflow: hidden;
 }
 
@@ -289,8 +287,22 @@ span {
   padding: clamp(1.5rem, 4vw, 2.5rem) 1.25rem;
   color: var(--ds-color-text-primary);
   background: var(--ds-color-bg-surface);
+  border-right: 1px solid var(--ds-color-border-default);
+  border-bottom: 1px solid var(--ds-color-border-default);
   cursor: pointer;
   transition: background var(--ds-duration-fast) ease;
+}
+
+/* Divider borders, not a fixed 6-tile layout: nth-child(3n) is "last
+   column" and nth-last-child(-n+3) is "nothing below it in this column" —
+   both hold for any tile count, not just multiples of 3, so the grid
+   doesn't need updating every time a sport is added or removed. */
+.sport-tile:nth-child(3n) {
+  border-right: none;
+}
+
+.sport-tile:nth-last-child(-n + 3) {
+  border-bottom: none;
 }
 
 .sport-tile:hover {
@@ -1273,6 +1285,17 @@ body.team-roster-active .app {
 
 .team-side--winner .team-name {
   color: var(--ds-color-text-primary);
+}
+
+/* National ranking badge (currently just college football's AP Top 25) —
+   shared across MatchCard/Standings/TeamsView since all three already
+   render whatever team object the API hands them; unranked teams (the
+   vast majority, and every non-college-football team) simply have no
+   `rank` field, so this never renders for them. */
+.team-rank {
+  margin-right: 0.35em;
+  color: var(--ds-color-brand);
+  font-weight: 800;
 }
 
 .team-side--winner .team-name::after {
@@ -2562,6 +2585,24 @@ body.team-roster-active .app {
 
   .sport-tile {
     min-height: 9.5rem;
+  }
+
+  /* Divider borders re-paired for 2 columns — same nth-child(N)/
+     nth-last-child(-n+N) reasoning as the desktop 3-column rules above. */
+  .sport-tile:nth-child(3n) {
+    border-right: 1px solid var(--ds-color-border-default);
+  }
+
+  .sport-tile:nth-child(2n) {
+    border-right: none;
+  }
+
+  .sport-tile:nth-last-child(-n + 3) {
+    border-bottom: 1px solid var(--ds-color-border-default);
+  }
+
+  .sport-tile:nth-last-child(-n + 2) {
+    border-bottom: none;
   }
 
   .coming-soon-content {
