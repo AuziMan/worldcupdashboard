@@ -60,7 +60,10 @@ function GroupTable({ group, formMap, highlightTop, league }) {
                 {row.team.crest && (
                   <img src={row.team.crest} alt={row.team.shortName} className="table-crest" />
                 )}
-                <span>{row.team.shortName || row.team.name}</span>
+                <span>
+                  {row.team.rank && <span className="team-rank">#{row.team.rank}</span>}
+                  {row.team.shortName || row.team.name}
+                </span>
                 {league && <FavoriteStar league={league} team={row.team} />}
               </td>
               <td>{row.playedGames}</td>

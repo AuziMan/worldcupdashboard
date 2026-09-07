@@ -33,7 +33,10 @@ function TeamSide({ team, isWinner, league }) {
       ) : (
         <div className="team-crest-placeholder">?</div>
       )}
-      <span className="team-name">{team?.shortName || team?.name || 'TBD'}</span>
+      <span className="team-name">
+        {team?.rank && <span className="team-rank">#{team.rank}</span>}
+        {team?.shortName || team?.name || 'TBD'}
+      </span>
       {isWinner && <span className="winner-label">Winner</span>}
       {league && team?.id && <FavoriteStar league={league} team={team} />}
     </div>

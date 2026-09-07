@@ -83,7 +83,10 @@ function TeamDirectoryCard({ team, league, onSelect }) {
         <span className="team-directory-kicker">
           {formatGroup(team.group) || team.tla || 'League team'}
         </span>
-        <h2>{team.name}</h2>
+        <h2>
+          {team.rank && <span className="team-rank">#{team.rank}</span>}
+          {team.name}
+        </h2>
         {team.shortName && team.shortName !== team.name && (
           <p>{team.shortName}</p>
         )}

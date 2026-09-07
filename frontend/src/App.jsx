@@ -87,6 +87,16 @@ const NFL_LEAGUE = {
   accent: '#013369',
 }
 
+const NCAAF_LEAGUE = {
+  label: 'NCAAF',
+  name: 'NCAA Football',
+  subtitle: 'FBS · USA',
+  logo: SPORTS.ncaaf.logo,
+  tabs: ['Matches', 'Teams', 'Standings'],
+  attribution: 'ESPN',
+  accent: '#8B2323',
+}
+
 const UFC_LEAGUE = {
   label: 'UFC',
   name: 'Ultimate Fighting Championship',
@@ -402,7 +412,7 @@ function F1Dashboard({ onHome }) {
 
 function sportFromHash() {
   const value = window.location.hash.slice(1)
-  return ['soccer', 'mlb', 'nba', 'nfl', 'ufc', 'f1'].includes(value) ? value : null
+  return ['soccer', 'mlb', 'nba', 'nfl', 'ncaaf', 'ufc', 'f1'].includes(value) ? value : null
 }
 
 export default function App() {
@@ -438,6 +448,7 @@ export default function App() {
   if (sport === 'mlb') return <SingleSportDashboard leagueKey="mlb" config={MLB_LEAGUE} onHome={goHome} />
   if (sport === 'nba') return <SingleSportDashboard leagueKey="nba" config={NBA_LEAGUE} onHome={goHome} />
   if (sport === 'nfl') return <SingleSportDashboard leagueKey="nfl" config={NFL_LEAGUE} onHome={goHome} />
+  if (sport === 'ncaaf') return <SingleSportDashboard leagueKey="ncaaf" config={NCAAF_LEAGUE} onHome={goHome} />
   if (sport === 'ufc') return <UfcDashboard onHome={goHome} />
   if (sport === 'f1') return <F1Dashboard onHome={goHome} />
   return (
