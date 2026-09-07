@@ -32,6 +32,7 @@ providers/f1.py still serves standings() from ESPN, which does have one.
 This provider only owns the schedule/session/live-position side.
 """
 
+import unicodedata
 from datetime import datetime, timezone
 
 import requests
@@ -159,3 +160,43 @@ def session_detail(session_key) -> dict:
         for d in sorted(drivers.values(), key=lambda d: d.get("number") or 0)
     ]
     return {"results": entry_list, "final": False}
+
+
+def normalize_name(name: str) -> str:
+    """Case/accent-insensitive join key — OpenF1 gives 'Nico HULKENBERG',
+    ESPN gives 'Nico Hülkenberg'; this reduces both to 'nico hulkenberg' so
+    driver_photos() below can be joined onto ESPN's standings rows by name."""
+    stripped = unicodedata.normalize("NFKD", name or "").encode("ascii", "ignore").decode()
+    return stripped.lower().strip()
+
+
+def driver_photos() -> dict:
+    """Real, always-populated headshot URLs (name -> URL) for the current
+    grid, used by providers/f1.py to replace ESPN's own headshot links for
+    its standings rows — those are guessed CDN paths ("{id}.png" under
+    ESPN_headshots) that 404 for any driver ESPN hasn't uploaded a photo
+    for, which in practice is most of the newer/rookie drivers (confirmed
+    by hand: 8 of 23 on the current grid 404). OpenF1's /drivers headshots
+    (sourced from Formula1.com) don't have that gap.
+
+    One session's roster can miss a driver who only raced part of the
+    season (an injury substitution, a mid-year seat change), so this merges
+    across the last few Race sessions rather than trusting just the latest
+    one — cheap (a handful of calls) and photos don't change race to race,
+    so a union is all that's needed, not the single "current" answer.
+    """
+    year = datetime.now(timezone.utc).year
+    now = datetime.now(timezone.utc)
+    races = [
+        s for s in _get("/sessions", year=year, session_type="Race")
+        if datetime.fromisoformat(s["date_start"]) <= now
+    ]
+    races.sort(key=lambda s: s["date_start"], reverse=True)
+
+    photos = {}
+    for session in races[:3]:
+        for d in _get("/drivers", session_key=session["session_key"]):
+            key = normalize_name(d.get("full_name"))
+            if key and d.get("headshot_url") and key not in photos:
+                photos[key] = d["headshot_url"]
+    return photos
