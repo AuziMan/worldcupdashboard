@@ -4,6 +4,7 @@ admin panel).
 """
 
 import hashlib
+import hmac
 from datetime import datetime, timedelta, timezone
 
 from flask import Blueprint, jsonify, request
@@ -41,7 +42,8 @@ def analytics_visit():
 @bp.route("/api/analytics")
 def analytics():
     token = request.headers.get("X-Refresh-Token", "")
-    if not REFRESH_SECRET or token != REFRESH_SECRET:
+    # See routes/meta.py's refresh() for why this is compare_digest, not `!=`.
+    if not REFRESH_SECRET or not hmac.compare_digest(token, REFRESH_SECRET):
         return jsonify({"error": "Unauthorized"}), 401
     if not redis_client:
         return jsonify({"error": "Analytics not configured"}), 503

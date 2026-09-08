@@ -39,5 +39,13 @@ def teams(league):
 def team_detail(league, team_id):
     if not registry.known_league(league):
         return jsonify({"error": "Unknown league"}), 404
+    # Every provider's team id is numeric (football-data.org, ESPN, MLB Stats
+    # API alike) — reject anything else before it reaches cache.cached() or a
+    # provider's URL-building. This closes two things at once: an attacker
+    # feeding arbitrary strings here can no longer grow the cache with
+    # unbounded distinct keys, and stray characters (e.g. "?", "#") can no
+    # longer ride along into the upstream request URL.
+    if not team_id.isdigit():
+        return jsonify({"error": "Invalid team id"}), 404
     data = cached(f"team_{league}_{team_id}", lambda: registry.fetch_team_detail(league, team_id))
     return jsonify(data)

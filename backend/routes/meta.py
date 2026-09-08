@@ -2,6 +2,8 @@
 /api/refresh.
 """
 
+import hmac
+
 from flask import Blueprint, jsonify, request
 
 import cache
@@ -20,7 +22,10 @@ def status():
 @limiter.limit("5 per minute")
 def refresh():
     token = request.headers.get("X-Refresh-Token", "")
-    if not REFRESH_SECRET or token != REFRESH_SECRET:
+    # hmac.compare_digest, not `!=` — a plain string comparison short-circuits
+    # on the first mismatched byte, which leaks how many leading characters
+    # of the token were correct via response timing.
+    if not REFRESH_SECRET or not hmac.compare_digest(token, REFRESH_SECRET):
         return jsonify({"error": "Unauthorized"}), 401
     cache.clear()
     return jsonify({"message": "Cache cleared. Next request will fetch fresh data."})
