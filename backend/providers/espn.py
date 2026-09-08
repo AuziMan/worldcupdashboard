@@ -83,6 +83,25 @@ def _minute(status: dict) -> int | None:
     return int(clock) if clock.isdigit() else None
 
 
+def _quarter_clock(status: dict) -> str | None:
+    """Format basketball/football's live status as "Q3 · 8:42" (or "OT ·
+    8:42" for overtime, "2OT" and up beyond that). Unlike soccer's "45'"
+    displayClock — a single elapsed-minute count `_minute()` above parses
+    directly — basketball/football report the quarter number and a
+    *remaining* mm:ss-in-that-quarter clock separately, and a game's total
+    length is nowhere near as fixed as a ~90-minute soccer match (stoppages,
+    replay reviews, OT), so there's no reasonable elapsed-minutes number to
+    derive from it either. This is what actually belongs on a live card —
+    the same real quarter+clock ESPN's own site shows — not an
+    elapsed-minutes estimate."""
+    period = status.get("period")
+    if not period:
+        return None
+    label = f"Q{period}" if period <= 4 else ("OT" if period == 5 else f"{period - 4}OT")
+    clock = status.get("displayClock")
+    return f"{label} · {clock}" if clock else label
+
+
 def matches(sport: str, code: str) -> dict:
     cfg = ESPN_SPORTS[sport]
     now = datetime.now(timezone.utc)
@@ -118,11 +137,20 @@ def matches(sport: str, code: str) -> dict:
                 # degrade this one field to "unavailable" instead.
                 return None
 
+        raw_status = comp.get("status", {})
+        # Soccer's "45'" clock is a plain elapsed minute (_minute() parses it
+        # directly); basketball/football instead report a quarter number
+        # plus a countdown clock, which _quarter_clock() formats as "Q3 ·
+        # 8:42" — surfaced as `period`, the same field MLB already uses for
+        # "Top 5th", so the frontend needs no sport-specific handling.
+        is_quarter_sport = sport in ("basketball", "football")
+
         results.append({
             "id": event.get("id"),
             "utcDate": event.get("date"),
             "status": status,
-            "minute": _minute(comp.get("status", {})) if status == "IN_PLAY" else None,
+            "minute": _minute(raw_status) if status == "IN_PLAY" and not is_quarter_sport else None,
+            "period": _quarter_clock(raw_status) if status == "IN_PLAY" and is_quarter_sport else None,
             "stage": None,
             "group": None,
             "homeTeam": _team(home.get("team", {})),
