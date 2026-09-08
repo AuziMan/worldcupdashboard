@@ -1029,31 +1029,32 @@ body.team-roster-active .app {
   animation: live-pulse 1.8s ease-in-out infinite;
 }
 
+/* A hairline rule ahead of the date, not just bigger text, is what actually
+   reads as "new day starts here" when scrolling past a run of match cards —
+   size alone is easy to skim past. */
 .date-divider {
-  margin: 2.25rem 0 0.9rem;
-  padding: 0;
+  margin: 2.75rem 0 1.1rem;
+  padding-top: 1.1rem;
   border: 0;
-  color: var(--ds-color-text-secondary);
-  font-size: 0.7rem;
-  font-weight: 800;
-  letter-spacing: 0.075em;
-}
-
-.date-divider--today {
+  border-top: 1px solid var(--ds-color-border-default);
   color: var(--ds-color-text-primary);
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
 .date-divider--today::after {
   content: "Today";
   display: inline-block;
-  margin-left: 0.55rem;
-  padding: 0.18rem 0.45rem;
+  margin-left: 0.6rem;
+  padding: 0.2rem 0.5rem;
   color: var(--ds-color-on-brand);
   background: var(--ds-color-brand);
   border-radius: var(--ds-radius-full);
-  font-size: 0.58rem;
+  font-size: 0.62rem;
   letter-spacing: 0.05em;
-  vertical-align: 0.05rem;
+  vertical-align: 0.08rem;
 }
 
 /* Match cards */
