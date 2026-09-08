@@ -10,6 +10,7 @@ import HomePage from './components/HomePage'
 import ComingSoonPage from './components/ComingSoonPage'
 import TeamsView from './components/TeamsView'
 import FightSection from './components/FightSection'
+import FightModal from './components/FightModal'
 import RankingsView from './components/RankingsView'
 import RaceSection from './components/RaceSection'
 import F1StandingsView from './components/F1StandingsView'
@@ -289,6 +290,7 @@ function SingleSportDashboard({ leagueKey, config, onHome }) {
 
 function UfcDashboard({ onHome }) {
   const [tab, setTab] = useState('Events')
+  const [selectedFight, setSelectedFight] = useState(null)
   const { matches, standings, loading, error, lastFetched, isLiveMode, refresh } = useUfcData()
 
   return (
@@ -328,7 +330,7 @@ function UfcDashboard({ onHome }) {
         )}
 
         {!loading && !error && tab === 'Events' && (
-          <FightSection matches={matches} onSelectMatch={() => {}} />
+          <FightSection matches={matches} onSelectMatch={setSelectedFight} />
         )}
 
         {!loading && !error && tab === 'Rankings' && (
@@ -342,6 +344,10 @@ function UfcDashboard({ onHome }) {
           Refreshes every minute (9 AM – 9 PM){isLiveMode ? ' · Live mode active' : ''}
         </p>
       </footer>
+
+      {selectedFight && (
+        <FightModal match={selectedFight} onClose={() => setSelectedFight(null)} />
+      )}
     </div>
   )
 }

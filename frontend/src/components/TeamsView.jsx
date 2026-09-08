@@ -11,7 +11,10 @@ function collectTeams(matches, standings) {
 
   for (const group of standings?.standings || []) {
     for (const row of group.table || []) {
-      if (!row.team?.id) continue
+      // A team with an id but no usable name can't be sorted (below) or
+      // rendered (TeamDirectoryCard reads team.name directly) — skip it here
+      // rather than letting the whole tab crash on one malformed provider row.
+      if (!row.team?.id || !row.team?.name) continue
       teams.set(String(row.team.id), {
         ...row.team,
         group: group.group || null,
