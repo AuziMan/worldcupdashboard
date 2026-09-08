@@ -16,6 +16,24 @@ const STATUS_LABELS = {
   AWARDED: 'Awarded',
 }
 
+// football-data.org's free tier never reports a live match minute for
+// WC/EPL, so this approximates one from wall-clock time since kickoff —
+// reasonable only because soccer halves are a fixed ~45 minutes (unlike
+// basketball/football, which get a real per-quarter clock instead — see
+// providers/espn.py's _quarter_clock()). Frozen at 45' during halftime
+// rather than climbing with break time, and offset by a standard ~15-minute
+// halftime once the second half is under way, so a match actually at minute
+// 60 doesn't read as 75'.
+const SOCCER_HALF_MINUTES = 45
+const SOCCER_HALFTIME_MINUTES = 15
+
+function estimateSoccerMinute(kickoff, status) {
+  const wallClockMinutes = Math.round((Date.now() - kickoff) / 60000)
+  if (status === 'PAUSED') return SOCCER_HALF_MINUTES
+  if (wallClockMinutes <= SOCCER_HALF_MINUTES) return wallClockMinutes
+  return Math.max(SOCCER_HALF_MINUTES, wallClockMinutes - SOCCER_HALFTIME_MINUTES)
+}
+
 function formatCountdown(kickoff) {
   const diff = kickoff - Date.now()
   if (diff <= 0 || diff > 4 * 60 * 60000) return null
@@ -65,13 +83,12 @@ function MatchCard({ match, onClick, showProgress = true, league }) {
   // or wrong-looking number.
   const scoreUnavailable = (isLive || isFinished) && !hasScore
 
-  // Sports without a fixed-duration clock (e.g. baseball) report a "period"
-  // string (innings) instead of a minute count — prefer that when present.
-  // Elapsed wall-clock minutes since kickoff (115 = 45' + 15' HT + 45' + hydration breaks)
-  // is only a meaningful estimate for fixed-duration sports, so it's skipped
-  // whenever a period is available.
+  // Sports with a real quarter/inning clock (basketball, football, baseball)
+  // report a "period" string instead — prefer that when present, and never
+  // fall back to a wall-clock guess for them (see estimateSoccerMinute below
+  // for why that guess only makes sense for soccer in the first place).
   const elapsedMinutes = isLive && !period
-    ? (minute ?? Math.round((Date.now() - kickoff) / 60000))
+    ? (minute ?? estimateSoccerMinute(kickoff, status))
     : null
   const progressPct = showProgress && (status === 'IN_PLAY' || status === 'LIVE') && elapsedMinutes != null
     ? Math.min((elapsedMinutes / 115) * 100, 100)
