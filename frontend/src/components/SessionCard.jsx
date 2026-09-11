@@ -15,13 +15,13 @@ const SESSION_ICONS = {
   Race: Flag,
 }
 
-function formatCountdown(date) {
+// "Starting Soon" cards (start time within the next 4 hours) show the
+// actual start time rather than a relative countdown — easier to scan at a
+// glance than a ticking "in 12m".
+function formatStartingSoonTime(date) {
   const diff = date - Date.now()
   if (diff <= 0 || diff > 4 * 60 * 60000) return null
-  const m = Math.ceil(diff / 60000)
-  if (m >= 60) return `in ${Math.floor(m / 60)}h ${m % 60}m`
-  if (m > 0) return `in ${m}m`
-  return 'soon'
+  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 }
 
 function SessionCard({ match, onClick }) {
@@ -33,7 +33,7 @@ function SessionCard({ match, onClick }) {
   const isPending = !isLive && !isFinished
 
   const statusLabel = STATUS_LABELS[status] || status
-  const countdown = isPending ? formatCountdown(date) : null
+  const startingSoonTime = isPending ? formatStartingSoonTime(date) : null
   const SessionIcon = SESSION_ICONS[sessionType] || Flag
 
   return (
@@ -61,8 +61,8 @@ function SessionCard({ match, onClick }) {
         <div className="match-vs">
           {isLive
             ? <span className="match-score-unavailable">Live</span>
-            : countdown
-              ? <span className="match-countdown">{countdown}</span>
+            : startingSoonTime
+              ? <span className="match-countdown">{startingSoonTime}</span>
               : date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
           }
         </div>

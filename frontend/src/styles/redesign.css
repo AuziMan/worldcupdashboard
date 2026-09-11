@@ -1064,7 +1064,7 @@ body.team-roster-active .app {
 }
 
 .match-card {
-  --match-card-team-mix: 13%;
+  --match-card-team-mix: 20%;
   position: relative;
   min-height: 15.5rem;
   padding: 1.25rem;
@@ -1075,7 +1075,6 @@ body.team-roster-active .app {
   background: linear-gradient(
     120deg,
     color-mix(in srgb, var(--team-home-color) var(--match-card-team-mix), var(--ds-color-bg-surface)) 0%,
-    var(--ds-color-bg-surface) 48%,
     color-mix(in srgb, var(--team-away-color) var(--match-card-team-mix), var(--ds-color-bg-surface)) 100%
   );
   border: 1.5px solid var(--ds-color-border-default);
@@ -1139,11 +1138,10 @@ body.team-roster-active .app {
 }
 
 .match-card:hover {
-  --match-card-team-mix: 20%;
+  --match-card-team-mix: 28%;
   background: linear-gradient(
     120deg,
     color-mix(in srgb, var(--team-home-color) var(--match-card-team-mix), var(--ds-color-bg-elevated)) 0%,
-    var(--ds-color-bg-elevated) 48%,
     color-mix(in srgb, var(--team-away-color) var(--match-card-team-mix), var(--ds-color-bg-elevated)) 100%
   );
   border-color: var(--ds-color-text-primary);
@@ -1240,8 +1238,8 @@ body.team-roster-active .app {
 }
 
 .match-teams .match-vs {
-  width: 5.75rem;
-  min-width: 5.75rem;
+  width: 6.25rem;
+  min-width: 6.25rem;
 }
 
 .team-side {
@@ -1317,8 +1315,10 @@ body.team-roster-active .app {
 .match-vs {
   min-width: 4.75rem;
   color: var(--ds-color-text-secondary);
-  font-size: 0.76rem;
-  font-weight: 600;
+  font-size: 0.92rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
   text-align: center;
 }
 
@@ -1336,12 +1336,12 @@ body.team-roster-active .app {
 }
 
 .match-countdown {
-  color: var(--ds-color-on-brand);
-  background: var(--ds-color-brand);
-  border-radius: var(--ds-radius-full);
-  padding: 0.28rem 0.5rem;
-  font-size: 0.65rem;
+  color: var(--ds-color-brand);
+  font-size: 0.85rem;
   font-weight: 800;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .spoiler-reveal,
@@ -1389,7 +1389,7 @@ body.team-roster-active .app {
 .match-footer {
   padding-right: 2.4rem;
   color: var(--ds-color-text-tertiary);
-  font-size: 0.63rem;
+  font-size: 0.74rem;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;

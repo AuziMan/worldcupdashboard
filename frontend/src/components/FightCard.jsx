@@ -13,13 +13,13 @@ const STATUS_LABELS = {
   SUSPENDED: 'Delayed',
 }
 
-function formatCountdown(date) {
+// "Starting Soon" cards (start time within the next 4 hours) show the
+// actual start time rather than a relative countdown — easier to scan at a
+// glance than a ticking "in 12m".
+function formatStartingSoonTime(date) {
   const diff = date - Date.now()
   if (diff <= 0 || diff > 4 * 60 * 60000) return null
-  const m = Math.ceil(diff / 60000)
-  if (m >= 60) return `in ${Math.floor(m / 60)}h ${m % 60}m`
-  if (m > 0) return `in ${m}m`
-  return 'soon'
+  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 }
 
 function FighterSide({ fighter, isWinner }) {
@@ -58,7 +58,7 @@ function FightCard({ match, onClick }) {
   const fighter2Wins = isFinished && result?.winnerId === fighter2?.id
 
   const statusLabel = STATUS_LABELS[status] || status
-  const countdown = isPending ? formatCountdown(date) : null
+  const startingSoonTime = isPending ? formatStartingSoonTime(date) : null
 
   const accessibleFighter1 = fighter1?.name || 'Fighter 1'
   const accessibleFighter2 = fighter2?.name || 'Fighter 2'
@@ -80,8 +80,8 @@ function FightCard({ match, onClick }) {
         <div className="match-vs">
           {isFinished
             ? <span className="match-score-unavailable">{result?.method || 'Final'}{result?.round ? ` · R${result.round}` : ''}</span>
-            : countdown
-              ? <span className="match-countdown">{countdown}</span>
+            : startingSoonTime
+              ? <span className="match-countdown">{startingSoonTime}</span>
               : isLive
                 ? <span className="match-score-unavailable">Live</span>
                 : date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })

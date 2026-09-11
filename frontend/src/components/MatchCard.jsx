@@ -34,13 +34,13 @@ function estimateSoccerMinute(kickoff, status) {
   return Math.max(SOCCER_HALF_MINUTES, wallClockMinutes - SOCCER_HALFTIME_MINUTES)
 }
 
-function formatCountdown(kickoff) {
+// "Starting Soon" cards (kickoff within the next 4 hours, same window
+// MatchSection buckets them by) show the actual kickoff time rather than a
+// relative countdown — easier to scan at a glance than a ticking "in 12m".
+function formatStartingSoonTime(kickoff) {
   const diff = kickoff - Date.now()
   if (diff <= 0 || diff > 4 * 60 * 60000) return null
-  const m = Math.ceil(diff / 60000)
-  if (m >= 60) return `in ${Math.floor(m / 60)}h ${m % 60}m`
-  if (m > 0) return `in ${m}m`
-  return 'soon'
+  return kickoff.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 }
 
 function TeamSide({ team, isWinner, league }) {
@@ -95,7 +95,7 @@ function MatchCard({ match, onClick, showProgress = true, league }) {
     : null
 
   const statusLabel = STATUS_LABELS[status] || status
-  const countdown = isPending ? formatCountdown(kickoff) : null
+  const startingSoonTime = isPending ? formatStartingSoonTime(kickoff) : null
   const spoilerHidden = isScoreHidden(match)
   const teamGradient = {
     '--team-home-color': getTeamColor(homeTeam),
@@ -151,8 +151,8 @@ function MatchCard({ match, onClick, showProgress = true, league }) {
             ? <span className="match-score">{homeScore}<span className="match-score-sep"> – </span>{awayScore}</span>
             : scoreUnavailable
               ? <span className="match-score-unavailable">{isLive ? 'Active' : 'Score unavailable'}</span>
-              : countdown
-                ? <span className="match-countdown">{countdown}</span>
+              : startingSoonTime
+                ? <span className="match-countdown">{startingSoonTime}</span>
                 : kickoff.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
           }
         </div>
