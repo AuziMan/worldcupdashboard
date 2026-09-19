@@ -17,6 +17,7 @@ already returns, so routes/sports code doesn't need to know which provider
 served a given league.
 """
 
+import concurrent.futures
 from datetime import datetime, timedelta, timezone
 
 import requests
@@ -102,22 +103,45 @@ def _quarter_clock(status: dict) -> str | None:
     return f"{label} · {clock}" if clock else label
 
 
+def _scoreboard_day(base: str, code: str, date_str: str) -> list:
+    data = _get(f"{base}/{code}/scoreboard?dates={date_str}")
+    return data.get("events", [])
+
+
 def matches(sport: str, code: str) -> dict:
     cfg = ESPN_SPORTS[sport]
     now = datetime.now(timezone.utc)
-    start = (now - timedelta(days=45)).strftime("%Y%m%d")
-    end = (now + timedelta(days=45)).strftime("%Y%m%d")
-    # ESPN's scoreboard endpoint silently caps at 100 events regardless of the
-    # requested date range and returns them in chronological order — for a
-    # busy league (e.g. MLS) with >100 already-played games earlier in the
-    # 90-day window, that cap gets eaten entirely by the past, so every
-    # upcoming/SCHEDULED fixture quietly gets truncated off. `limit=1000`
-    # lifts that cap; confirmed against the raw endpoint (100 events without
-    # it, 219 — including SCHEDULED ones — with it).
-    data = _get(f"{cfg['base']}/{code}/scoreboard?dates={start}-{end}&limit=1000")
+    # The scoreboard endpoint used to take one `dates=start-end` range query
+    # covering the whole ±45-day window below. ESPN broke that: a range query
+    # — any range, even a same-day one — now returns a flat 400 ("Failed to
+    # get events endpoint.") for football/basketball/soccer, while a single
+    # `dates=YYYYMMDD` still works (UFC's scoreboard range in providers/ufc.py
+    # is unaffected, so this is scoped to these sport families, not ESPN's
+    # site-api as a whole). So: fetch one day at a time instead — in parallel,
+    # since 91 of these serially would be slow — and merge, deduping by event
+    # id in case a day boundary ever returns the same event twice. This also
+    # drops the `limit=1000` param the old range call needed to beat ESPN's
+    # 100-events-per-request cap: that cap was only ever a problem across a
+    # wide multi-day range, never within a single day, and it turns out
+    # `limit` on a *single*-day query doesn't just lift a cap — for college
+    # football it silently drops events outright (71 vs 25 on the same
+    # Saturday, tested directly against the raw endpoint), so it's better left
+    # off entirely here.
+    date_strs = [
+        (now + timedelta(days=offset)).strftime("%Y%m%d")
+        for offset in range(-45, 46)
+    ]
+    events_by_id = {}
+    with concurrent.futures.ThreadPoolExecutor(max_workers=16) as pool:
+        per_day = pool.map(
+            lambda d: _scoreboard_day(cfg["base"], code, d), date_strs
+        )
+        for events in per_day:
+            for event in events:
+                events_by_id[event.get("id")] = event
 
     results = []
-    for event in data.get("events", []):
+    for event in sorted(events_by_id.values(), key=lambda e: e.get("date") or ""):
         comp = (event.get("competitions") or [{}])[0]
         status_type = comp.get("status", {}).get("type", {})
         status = STATUS_MAP.get(status_type.get("name"), "SCHEDULED")
