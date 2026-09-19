@@ -104,7 +104,18 @@ def _quarter_clock(status: dict) -> str | None:
 
 
 def _scoreboard_day(base: str, code: str, date_str: str) -> list:
-    data = _get(f"{base}/{code}/scoreboard?dates={date_str}")
+    # The broken range query this replaced (see matches() below) was observed
+    # in production to hang for ~30s from Render's IP before failing, instead
+    # of failing fast like it does from other networks — enough to trip
+    # gunicorn's worker timeout and take the whole process down. A per-day
+    # query has only ever failed fast in testing, but since it's the same
+    # ESPN endpoint behaving inconsistently by requester, one slow/failing day
+    # out of the 91 in the window is swallowed here rather than allowed to
+    # fail the whole fetch — better to show 90 days of matches than none.
+    try:
+        data = _get(f"{base}/{code}/scoreboard?dates={date_str}")
+    except requests.exceptions.RequestException:
+        return []
     return data.get("events", [])
 
 
