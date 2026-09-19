@@ -142,8 +142,14 @@ def matches(sport: str, code: str) -> dict:
         (now + timedelta(days=offset)).strftime("%Y%m%d")
         for offset in range(-45, 46)
     ]
+    # max_workers is deliberately modest (not e.g. 16): Render's free tier has
+    # very little CPU, and this pool's threads compete with gunicorn's own
+    # request-handling threads (render.yaml) plus whatever other league's
+    # matches() call might be running concurrently — a bigger pool just means
+    # more simultaneous outbound connections fighting over the same sliver of
+    # CPU, not a faster fetch.
     events_by_id = {}
-    with concurrent.futures.ThreadPoolExecutor(max_workers=16) as pool:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=6) as pool:
         per_day = pool.map(
             lambda d: _scoreboard_day(cfg["base"], code, d), date_strs
         )

@@ -11,6 +11,7 @@ without a cap, hammering that endpoint with unique junk IDs would grow this
 dict without bound until the process runs out of memory.
 """
 
+import threading
 from collections import OrderedDict
 from datetime import datetime, timezone
 
@@ -23,6 +24,24 @@ MAX_ENTRIES = 500
 # has gone longest untouched, not just the oldest-inserted one.
 _cache: OrderedDict = OrderedDict()
 
+# Striped locks (fixed count, not one per key) so concurrent requests for the
+# same cold key serialize onto one fetch instead of each independently
+# calling fetch() — this matters a lot now that gunicorn runs multiple
+# request-handling threads (see render.yaml): without this, several requests
+# landing within the same cache-miss window for e.g. matches_ncaaf each fired
+# off their own 91-request ESPN burst (see providers/espn.py's matches()),
+# which was enough concurrent thread/network load on Render's free tier to
+# starve even unrelated, otherwise-fast endpoints. A fixed stripe count keeps
+# this bounded (unlike a dict keyed per-cache-key, which would grow exactly
+# like the MAX_ENTRIES problem above); two unrelated keys occasionally
+# sharing a stripe just means one waits a beat, not a correctness issue.
+_LOCK_STRIPES = 32
+_locks = [threading.Lock() for _ in range(_LOCK_STRIPES)]
+
+
+def _lock_for(key: str) -> threading.Lock:
+    return _locks[hash(key) % _LOCK_STRIPES]
+
 
 def _has_live_matches(data: dict) -> bool:
     return any(
@@ -31,7 +50,8 @@ def _has_live_matches(data: dict) -> bool:
     )
 
 
-def cached(key: str, fetch):
+def _fresh(key: str):
+    """Returns the cached entry's data if it's still within TTL, else None."""
     now = datetime.now(timezone.utc)
     entry = _cache.get(key)
     live = key.startswith("matches_") and entry and _has_live_matches(entry["data"])
@@ -39,12 +59,26 @@ def cached(key: str, fetch):
     if entry and now - entry["ts"] < ttl:
         _cache.move_to_end(key)
         return entry["data"]
-    data = fetch()
-    _cache[key] = {"data": data, "ts": now}
-    _cache.move_to_end(key)
-    while len(_cache) > MAX_ENTRIES:
-        _cache.popitem(last=False)
-    return data
+    return None
+
+
+def cached(key: str, fetch):
+    data = _fresh(key)
+    if data is not None:
+        return data
+
+    with _lock_for(key):
+        # Re-check after acquiring the lock — another thread may have already
+        # refreshed this key while this one was waiting on it.
+        data = _fresh(key)
+        if data is not None:
+            return data
+        data = fetch()
+        _cache[key] = {"data": data, "ts": datetime.now(timezone.utc)}
+        _cache.move_to_end(key)
+        while len(_cache) > MAX_ENTRIES:
+            _cache.popitem(last=False)
+        return data
 
 
 def clear():
