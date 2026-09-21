@@ -62,22 +62,69 @@ def _fresh(key: str):
     return None
 
 
+def _store(key: str, data) -> None:
+    _cache[key] = {"data": data, "ts": datetime.now(timezone.utc)}
+    _cache.move_to_end(key)
+    while len(_cache) > MAX_ENTRIES:
+        _cache.popitem(last=False)
+
+
+# Keys with a background refresh currently in flight — guards against two
+# expired-but-still-serving-stale requests both spawning their own refresh
+# thread for the same key (see cached() below).
+_refreshing: set = set()
+_refreshing_guard = threading.Lock()
+
+
+def _background_refresh(key: str, fetch) -> None:
+    try:
+        data = fetch()
+        with _lock_for(key):
+            _store(key, data)
+    except Exception:
+        # Upstream is still failing/slow — keep serving the stale entry
+        # already in _cache; the next request past TTL will try again.
+        pass
+    finally:
+        with _refreshing_guard:
+            _refreshing.discard(key)
+
+
 def cached(key: str, fetch):
     data = _fresh(key)
     if data is not None:
         return data
 
+    entry = _cache.get(key)
+    if entry is not None:
+        # Stale, but something to serve: hand back the old data immediately
+        # and refresh in the background instead of making this request (and
+        # every other one that lands before the refresh finishes) block on a
+        # slow upstream fetch — some of ESPN's leagues legitimately take
+        # 30+s per fetch (see providers/espn.py), which made every request
+        # landing right after a 60s TTL expiry sit waiting that whole time.
+        # Only the very first request for a key (nothing cached yet at all,
+        # e.g. right after a deploy) still has to wait — see the cold path
+        # below.
+        with _refreshing_guard:
+            already_refreshing = key in _refreshing
+            if not already_refreshing:
+                _refreshing.add(key)
+        if not already_refreshing:
+            threading.Thread(
+                target=_background_refresh, args=(key, fetch), daemon=True
+            ).start()
+        return entry["data"]
+
+    # Truly cold — nothing cached yet, so this one request has to wait.
     with _lock_for(key):
         # Re-check after acquiring the lock — another thread may have already
-        # refreshed this key while this one was waiting on it.
+        # populated this key while this one was waiting on it.
         data = _fresh(key)
         if data is not None:
             return data
         data = fetch()
-        _cache[key] = {"data": data, "ts": datetime.now(timezone.utc)}
-        _cache.move_to_end(key)
-        while len(_cache) > MAX_ENTRIES:
-            _cache.popitem(last=False)
+        _store(key, data)
         return data
 
 

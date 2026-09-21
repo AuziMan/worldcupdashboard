@@ -33,7 +33,7 @@ This provider only owns the schedule/session/live-position side.
 """
 
 import unicodedata
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import requests
 
@@ -170,6 +170,10 @@ def normalize_name(name: str) -> str:
     return stripped.lower().strip()
 
 
+_photo_cache: dict = {"data": None, "ts": None}
+_PHOTO_CACHE_TTL = timedelta(hours=6)
+
+
 def driver_photos() -> dict:
     """Real, always-populated headshot URLs (name -> URL) for the current
     grid, used by providers/f1.py to replace ESPN's own headshot links for
@@ -184,9 +188,21 @@ def driver_photos() -> dict:
     across the last few Race sessions rather than trusting just the latest
     one — cheap (a handful of calls) and photos don't change race to race,
     so a union is all that's needed, not the single "current" answer.
+
+    Cached here for 6 hours (separately from cache.py's 60s shared TTL,
+    which governs standings_f1 as a whole): this function's own docstring
+    already establishes photos don't change race to race, yet it was being
+    re-fetched (up to 4 OpenF1 calls: one /sessions + up to three /drivers)
+    every single time standings_f1 expired — i.e. every 60s under active
+    polling. That was enough sustained load to get this app's IP rate-limited
+    by OpenF1 (429), which providers/f1.py's standings() used to let take
+    down the entire standings response instead of just the photos.
     """
-    year = datetime.now(timezone.utc).year
     now = datetime.now(timezone.utc)
+    if _photo_cache["data"] is not None and now - _photo_cache["ts"] < _PHOTO_CACHE_TTL:
+        return _photo_cache["data"]
+
+    year = now.year
     races = [
         s for s in _get("/sessions", year=year, session_type="Race")
         if datetime.fromisoformat(s["date_start"]) <= now
@@ -199,4 +215,7 @@ def driver_photos() -> dict:
             key = normalize_name(d.get("full_name"))
             if key and d.get("headshot_url") and key not in photos:
                 photos[key] = d["headshot_url"]
+
+    _photo_cache["data"] = photos
+    _photo_cache["ts"] = now
     return photos
