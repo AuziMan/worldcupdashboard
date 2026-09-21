@@ -46,7 +46,14 @@ def _points(stats: dict) -> int:
 
 def standings() -> dict:
     data = _get(ESPN_F1_STANDINGS_URL)
-    photos = openf1_provider.driver_photos()
+    try:
+        photos = openf1_provider.driver_photos()
+    except requests.exceptions.RequestException:
+        # OpenF1 has started rate-limiting this enrichment call (429) under
+        # sustained polling — photos are a nice-to-have on top of ESPN's
+        # already-successful standings data above, so a failure here should
+        # degrade to no photos, not take the whole endpoint down.
+        photos = {}
 
     groups = []
     for child in data.get("children", []):
