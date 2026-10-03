@@ -147,9 +147,14 @@ def matches(sport: str, code: str) -> dict:
     # request-handling threads (render.yaml) plus whatever other league's
     # matches() call might be running concurrently — a bigger pool just means
     # more simultaneous outbound connections fighting over the same sliver of
-    # CPU, not a faster fetch.
+    # CPU, not a faster fetch. 10 (not the original 16) balances that against
+    # cache.py now guaranteeing only one fetch per key runs at a time (no more
+    # concurrent duplicate fetches piling up) and app.py warming this cache in
+    # the background at boot rather than under live request pressure — both
+    # of which make a slightly bigger burst safer than it was right after the
+    # ESPN-range-query breakage, when this was still 16.
     events_by_id = {}
-    with concurrent.futures.ThreadPoolExecutor(max_workers=6) as pool:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as pool:
         per_day = pool.map(
             lambda d: _scoreboard_day(cfg["base"], code, d), date_strs
         )
