@@ -4,47 +4,12 @@ Kept as a real module-level `app` object at backend/ root because
 render.yaml's start command is `gunicorn app:app` with rootDir: backend.
 """
 
-import threading
-
 from flask import Flask
 from werkzeug.middleware.proxy_fix import ProxyFix
 
-import cache
 from config import ALLOWED_ORIGINS
 from extensions import init_cors, limiter
 from routes import analytics, f1, leagues, meta
-from sports import registry
-
-# Leagues whose matches() is slow enough (ESPN's per-day scoreboard workaround
-# — see providers/espn.py) that the *first* request to hit a cold cache key
-# for one, after any process restart, would otherwise block for ~30s. Warmed
-# first and in this order so the slow ones are covered as early as possible;
-# the rest of the registry (fast providers) gets warmed right after.
-_WARM_FIRST = ["mls", "nba", "nfl", "ncaaf"]
-
-
-def _warm_cache():
-    leagues_in_order = _WARM_FIRST + [
-        league for league in registry.LEAGUE_MODULE if league not in _WARM_FIRST
-    ]
-    for league in leagues_in_order:
-        # matches/standings only, not teams: rosters aren't what users are
-        # waiting on (see cache.py's stale-while-revalidate for the eventual
-        # first real request to teams_<league>), and skipping them here
-        # roughly halves the request burst this fires at boot — worth it
-        # given football-data.org's (wc/epl) free tier caps at 10 req/min,
-        # a budget real user traffic also has to share.
-        for resource, fetch in (
-            ("matches", registry.fetch_matches),
-            ("standings", registry.fetch_standings),
-        ):
-            try:
-                cache.cached(f"{resource}_{league}", lambda l=league, f=fetch: f(l))
-            except Exception:
-                # A slow/broken upstream during warmup shouldn't stop the rest
-                # of the leagues from warming — cache.cached()'s normal
-                # per-request path will just retry this one on first use.
-                pass
 
 
 def create_app():
@@ -71,15 +36,6 @@ def create_app():
     app.register_blueprint(meta.bp)
     app.register_blueprint(analytics.bp)
     app.register_blueprint(f1.bp)
-
-    # Fire-and-forget: populates cache.py's cache for every known league
-    # before any real request arrives, so the *first* user to hit a cold key
-    # after a restart doesn't have to be the one who waits ~30s for it (see
-    # cache.py's stale-while-revalidate path, which otherwise only helps once
-    # something has been cached at least once). Runs in the background so
-    # create_app() — and therefore gunicorn's boot/health check — isn't
-    # blocked on it.
-    threading.Thread(target=_warm_cache, daemon=True).start()
 
     return app
 
