@@ -9,6 +9,7 @@ keeps working unmodified. ESPN doesn't expose a dedicated method-of-victory
 field — it's scraped out of the play-by-play "details" list (see _method()).
 """
 
+import concurrent.futures
 from datetime import datetime, timedelta, timezone
 
 import requests
@@ -74,41 +75,71 @@ def _division_label(rtype: str) -> str:
     return " ".join("Women's" if w == "womens" else w.capitalize() for w in rtype.split("-"))
 
 
+def _scoreboard_day(date_str: str) -> list:
+    try:
+        data = _get(f"/scoreboard?dates={date_str}")
+    except requests.exceptions.RequestException:
+        # Mirrors providers/espn.py's same per-day resilience: one bad/slow
+        # day out of the whole window shouldn't fail the entire fetch.
+        return []
+    return data.get("events", [])
+
+
 def matches() -> dict:
     now = datetime.now(timezone.utc)
-    start = (now - timedelta(days=45)).strftime("%Y%m%d")
-    end = (now + timedelta(days=180)).strftime("%Y%m%d")
-    data = _get(f"/scoreboard?dates={start}-{end}")
+
+    # ESPN's MMA scoreboard now 500s on a dates=start-end range covering
+    # certain multi-day spans — confirmed directly against the raw endpoint:
+    # every *individual* day in the ±45/+180 window below returns 200 on its
+    # own, but several different multi-day ranges that include today's date
+    # 500 regardless of how wide or narrow they are (e.g. a 15-day range
+    # starting today fails, but the 15-day ranges immediately before and
+    # after it succeed) — so there's no safe fixed chunk size to pick; it's
+    # something about combining specific days in one request, not a width
+    # limit. The only combination proven reliable is one day per request,
+    # same approach providers/espn.py already uses for football/basketball/
+    # soccer (a different, unrelated ESPN regression there) — in parallel,
+    # since 226 of these serially would be slow, deduping by competition id
+    # in case of any boundary overlap.
+    date_strs = [
+        (now + timedelta(days=offset)).strftime("%Y%m%d")
+        for offset in range(-45, 181)
+    ]
+    events_by_comp_id = {}
+    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as pool:
+        for events in pool.map(_scoreboard_day, date_strs):
+            for event in events:
+                for comp in event.get("competitions", []):
+                    events_by_comp_id[comp.get("id")] = (event, comp)
 
     results = []
-    for event in data.get("events", []):
-        for comp in event.get("competitions", []):
-            status_type = comp.get("status", {}).get("type", {})
-            status = STATUS_MAP.get(status_type.get("name"), "SCHEDULED")
+    for event, comp in events_by_comp_id.values():
+        status_type = comp.get("status", {}).get("type", {})
+        status = STATUS_MAP.get(status_type.get("name"), "SCHEDULED")
 
-            competitors = sorted(comp.get("competitors", []), key=lambda c: c.get("order", 0))
-            fighter1 = competitors[0] if len(competitors) > 0 else {}
-            fighter2 = competitors[1] if len(competitors) > 1 else {}
+        competitors = sorted(comp.get("competitors", []), key=lambda c: c.get("order", 0))
+        fighter1 = competitors[0] if len(competitors) > 0 else {}
+        fighter2 = competitors[1] if len(competitors) > 1 else {}
 
-            winner = next((c for c in competitors if c.get("winner")), None)
-            result = None
-            if status == "FINISHED" and winner:
-                result = {
-                    "winnerId": (winner.get("athlete") or {}).get("id") or winner.get("id"),
-                    "round": comp.get("status", {}).get("period"),
-                    "method": _method(comp.get("details")),
-                }
+        winner = next((c for c in competitors if c.get("winner")), None)
+        result = None
+        if status == "FINISHED" and winner:
+            result = {
+                "winnerId": (winner.get("athlete") or {}).get("id") or winner.get("id"),
+                "round": comp.get("status", {}).get("period"),
+                "method": _method(comp.get("details")),
+            }
 
-            results.append({
-                "id": comp.get("id"),
-                "event": event.get("name"),
-                "utcDate": comp.get("date") or event.get("date"),
-                "status": status,
-                "weightClass": (comp.get("type") or {}).get("abbreviation"),
-                "fighter1": _fighter(fighter1),
-                "fighter2": _fighter(fighter2),
-                "result": result,
-            })
+        results.append({
+            "id": comp.get("id"),
+            "event": event.get("name"),
+            "utcDate": comp.get("date") or event.get("date"),
+            "status": status,
+            "weightClass": (comp.get("type") or {}).get("abbreviation"),
+            "fighter1": _fighter(fighter1),
+            "fighter2": _fighter(fighter2),
+            "result": result,
+        })
 
     return {"matches": results}
 
