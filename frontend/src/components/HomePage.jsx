@@ -3,13 +3,18 @@ import { useState } from 'react'
 import { ArrowLeftRight, Check, ChevronLeft, ChevronRight } from 'lucide-react'
 import ThemeToggle from './ThemeToggle'
 import BrandMark from './BrandMark'
+import LiveTicker from './LiveTicker'
+import LiveWheel from './LiveWheel'
+import SportGameRail from './SportGameRail'
 import { SPORTS } from '@/lib/sports'
 import { useSportOrder } from '@/hooks/useSportOrder'
+import { useLiveFeed } from '@/hooks/useLiveFeed'
+import { selectFeatured, selectWheelGames, formatHeadline } from '@/lib/liveFeed'
 import { Tooltip } from './ui/Tooltip'
 
 const SPORT_KEYS = Object.keys(SPORTS)
 
-function SportTile({ sportKey, sport, index, count, reordering, onSelect, onMoveEarlier, onMoveLater }) {
+function SportTile({ sportKey, sport, headline, index, count, reordering, onSelect, onMoveEarlier, onMoveLater }) {
   const comingSoon = sport.detail === 'Coming soon'
 
   function activate() {
@@ -61,7 +66,7 @@ function SportTile({ sportKey, sport, index, count, reordering, onSelect, onMove
       )}
       <img src={sport.logo} alt={`${sport.label} logo`} />
       <span className="sport-tile-name">{sport.label}</span>
-      <span className="sport-tile-status">{sport.detail}</span>
+      <span className="sport-tile-status">{headline || sport.detail}</span>
     </div>
   )
 
@@ -77,6 +82,7 @@ function SportTile({ sportKey, sport, index, count, reordering, onSelect, onMove
 export default function HomePage({ onSelectSport }) {
   const [reordering, setReordering] = useState(false)
   const { order, moveEarlier, moveLater } = useSportOrder(SPORT_KEYS)
+  const { games, gamesBySport, loading, error } = useLiveFeed()
 
   return (
     <main className="welcome">
@@ -102,14 +108,11 @@ export default function HomePage({ onSelectSport }) {
       </header>
 
       <section className="welcome-content">
-        <div className="welcome-ticker">
-          <h1>
-            Choose your arena <span>&mdash; one place, every game</span>
-          </h1>
-        </div>
-        <p className="welcome-intro">
-          Scores, standings, and the moments that matter—built for the way you follow sports.
-        </p>
+        <LiveTicker order={order} gamesBySport={gamesBySport} onSelectSport={onSelectSport} loading={loading} />
+
+        <LiveWheel games={selectWheelGames(games)} onSelectSport={onSelectSport} loading={loading} error={error} />
+
+        <SportGameRail order={order} gamesBySport={gamesBySport} onSelectSport={onSelectSport} loading={loading} />
 
         <div className="sport-grid" aria-label="Choose a sport">
           {order.map((key, i) => (
@@ -117,6 +120,7 @@ export default function HomePage({ onSelectSport }) {
               key={key}
               sportKey={key}
               sport={SPORTS[key]}
+              headline={loading ? null : formatHeadline(selectFeatured(gamesBySport[key]))}
               index={i}
               count={order.length}
               reordering={reordering}
