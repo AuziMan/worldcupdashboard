@@ -234,37 +234,225 @@ span {
   height: 1.1rem;
 }
 
-/* Headline band — a dark ticker strip rather than a giant page-scale
-   headline, since the sport grid below is the visual lead now. */
+/* Headline band — a dark strip that now carries an auto-scrolling live
+   ticker instead of a static "Choose your arena" headline; the sport grid
+   below, and the wheel/rail above it, are the real visual lead. */
 .welcome-ticker {
-  padding: clamp(1.1rem, 3vw, 1.6rem) clamp(1.25rem, 3.5vw, 2rem);
+  padding: clamp(0.65rem, 1.6vw, 0.9rem) 0;
+  overflow: hidden;
   background: var(--ds-color-bg-inverse);
   border-radius: var(--ds-radius-lg);
 }
 
-.welcome-ticker h1 {
-  margin: 0;
+.welcome-ticker-loading {
+  padding: 0 clamp(1.25rem, 3.5vw, 2rem);
   color: var(--ds-color-text-inverse);
-  font-size: clamp(1.4rem, 3.6vw, 2.5rem);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.welcome-ticker-track {
+  display: inline-flex;
+  /* Content is rendered twice (see LiveTicker.jsx) so this loop never gaps. */
+  animation: marquee-scroll 32s linear infinite;
+}
+
+/* The reduced-motion story for every marquee here (this track, plus
+   .live-wheel-track below) is handled by the existing global
+   `@media (prefers-reduced-motion: reduce)` rule further down this file —
+   it forces a near-zero animation-duration/iteration-count on everything,
+   which freezes these loops on their first frame. No bespoke override
+   needed here. */
+.welcome-ticker:hover .welcome-ticker-track,
+.welcome-ticker:focus-within .welcome-ticker-track {
+  animation-play-state: paused;
+}
+
+.welcome-ticker-item {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 clamp(1.25rem, 3.5vw, 2rem);
+  border-right: 1px solid color-mix(in srgb, var(--ds-color-text-inverse) 18%, transparent);
+  color: var(--ds-color-text-inverse);
+  font-size: 0.82rem;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.welcome-ticker-sport {
+  color: var(--sport-accent, var(--ds-color-brand));
+  font-family: var(--ds-font-display);
   font-weight: 800;
-  line-height: 1.15;
-  letter-spacing: -0.02em;
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
-.welcome-ticker h1 span {
-  color: color-mix(in srgb, var(--ds-color-text-inverse) 52%, transparent);
-  font-weight: 500;
+.welcome-ticker-headline {
+  font-weight: 600;
 }
 
-.welcome-intro {
-  max-width: 36rem;
-  margin-top: 1.1rem;
+@keyframes marquee-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.live-wheel {
+  margin-top: clamp(1.25rem, 3vw, 2rem);
+  overflow: hidden;
+}
+
+.live-wheel--empty {
+  color: var(--ds-color-text-tertiary);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.live-wheel-track {
+  display: inline-flex;
+  gap: 0.9rem;
+  padding: 0.15rem 0.15rem 0.6rem;
+  animation: marquee-scroll 36s linear infinite;
+}
+
+.live-wheel:hover .live-wheel-track,
+.live-wheel:focus-within .live-wheel-track {
+  animation-play-state: paused;
+}
+
+.live-wheel-card {
+  flex: none;
+  width: 15rem;
+  padding: 1rem 1.1rem;
+  text-align: left;
+  color: var(--ds-color-text-primary);
+  background: var(--ds-color-bg-surface);
+  border: 1px solid var(--ds-color-border-default);
+  border-top: 3px solid var(--sport-accent, var(--ds-color-brand));
+  border-radius: var(--ds-radius-md);
+  cursor: pointer;
+  transition: background var(--ds-duration-fast) ease;
+}
+
+.live-wheel-card:hover,
+.live-wheel-card:focus-visible {
+  background: var(--ds-color-brand-subtle);
+}
+
+.live-wheel-sport {
+  display: block;
+  margin-bottom: 0.4rem;
+  color: var(--sport-accent, var(--ds-color-brand));
+  font-family: var(--ds-font-display);
+  font-weight: 800;
+  font-size: 0.66rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.live-wheel-pair {
+  display: block;
+  font-family: var(--ds-font-display);
+  font-weight: 700;
+  font-size: 0.98rem;
+  line-height: 1.25;
+}
+
+.live-wheel-status {
+  display: block;
+  margin-top: 0.35rem;
   color: var(--ds-color-text-secondary);
-  font-size: clamp(0.85rem, 1.4vw, 1rem);
-  font-weight: 500;
-  line-height: 1.5;
-  letter-spacing: -0.012em;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.sport-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  margin-top: clamp(1.25rem, 3vw, 2rem);
+}
+
+.sport-rail-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.sport-rail-message {
+  color: var(--ds-color-text-tertiary);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.game-chip {
+  flex: 1 1 11rem;
+  max-width: 14rem;
+  padding: 0.65rem 0.85rem;
+  text-align: left;
+  color: var(--ds-color-text-primary);
+  background: var(--ds-color-bg-surface);
+  border: 1px solid var(--ds-color-border-default);
+  border-radius: var(--ds-radius-md);
+  cursor: pointer;
+  transition: background var(--ds-duration-fast) ease;
+}
+
+.game-chip:hover,
+.game-chip:focus-visible {
+  background: var(--ds-color-brand-subtle);
+}
+
+.game-chip-pair {
+  display: block;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.game-chip-status {
+  display: block;
+  margin-top: 0.25rem;
+  color: var(--ds-color-text-secondary);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.sport-bubbles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.sport-bubble {
+  padding: 0.45rem 0.95rem;
+  color: var(--ds-color-text-secondary);
+  background: var(--ds-color-bg-surface);
+  border: 1px solid var(--ds-color-border-default);
+  border-radius: var(--ds-radius-full);
+  font-family: var(--ds-font-display);
+  font-weight: 700;
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition:
+    color var(--ds-duration-fast) ease,
+    background var(--ds-duration-fast) ease,
+    border-color var(--ds-duration-fast) ease;
+}
+
+.sport-bubble:hover {
+  border-color: var(--sport-accent, var(--ds-color-brand));
+}
+
+.sport-bubble--active {
+  color: var(--ds-color-on-brand);
+  background: var(--sport-accent, var(--ds-color-brand));
+  border-color: var(--sport-accent, var(--ds-color-brand));
 }
 
 .sport-grid {
@@ -2597,10 +2785,6 @@ body.team-roster-active .app {
   .welcome-content {
     align-content: start;
     padding-top: 8vh;
-  }
-
-  .welcome-intro {
-    max-width: 28rem;
   }
 
   .sport-grid {
