@@ -4,7 +4,16 @@ services:
     runtime: python
     rootDir: backend
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app:app --worker-class gthread --workers 1 --threads 8 --timeout 120
+    # workers stays 1 (not more) because cache.py's in-memory cache is only
+    # shared within one process — a second worker would get its own empty
+    # cache and double the cold-fetch cost instead of avoiding it. threads is
+    # 24, not 8: the homepage's live rail (hooks/useLiveFeed.js) now fires up
+    # to 16 concurrent requests per visit (today + future per league), plus
+    # app.py's own boot-time cache warm-up pool — all of which are I/O-bound
+    # waits on slow upstream APIs (Render's free-tier CPU makes even a single
+    # outbound request take several seconds), so more threads mostly means
+    # less time spent queued rather than more CPU contention.
+    startCommand: gunicorn app:app --worker-class gthread --workers 1 --threads 24 --timeout 120
     envVars:
       - key: FOOTBALL_DATA_API_KEY
         sync: false
