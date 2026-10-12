@@ -5,7 +5,7 @@ import { selectFeatured, formatHeadline } from '@/lib/liveFeed'
 // Replaces the old static "Choose your arena" headline that used to live in
 // this same .welcome-ticker strip — one compact, always-scrolling line per
 // sport instead, each showing that sport's single most relevant game.
-export default function LiveTicker({ order, gamesBySport, onSelectSport, loading }) {
+export default function LiveTicker({ order, gamesBySport, loadingSports, onSelectSport, loading }) {
   if (loading) {
     return (
       <div className="welcome-ticker">
@@ -17,7 +17,7 @@ export default function LiveTicker({ order, gamesBySport, onSelectSport, loading
   const lines = order.map(sportKey => ({
     sportKey,
     sport: SPORTS[sportKey],
-    headline: formatHeadline(selectFeatured(gamesBySport[sportKey])),
+    headline: loadingSports.has(sportKey) ? 'Loading…' : formatHeadline(selectFeatured(gamesBySport[sportKey])),
   }))
 
   if (lines.length === 0) return null

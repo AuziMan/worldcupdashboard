@@ -82,7 +82,7 @@ function SportTile({ sportKey, sport, headline, index, count, reordering, onSele
 export default function HomePage({ onSelectSport }) {
   const [reordering, setReordering] = useState(false)
   const { order, moveEarlier, moveLater } = useSportOrder(SPORT_KEYS)
-  const { games, gamesBySport, loading, error } = useLiveFeed()
+  const { games, gamesBySport, loadingSports, loading, error } = useLiveFeed()
 
   return (
     <main className="welcome">
@@ -108,11 +108,11 @@ export default function HomePage({ onSelectSport }) {
       </header>
 
       <section className="welcome-content">
-        <LiveTicker order={order} gamesBySport={gamesBySport} onSelectSport={onSelectSport} loading={loading} />
+        <LiveTicker order={order} gamesBySport={gamesBySport} loadingSports={loadingSports} onSelectSport={onSelectSport} loading={loading} />
 
         <LiveWheel games={selectWheelGames(games)} onSelectSport={onSelectSport} loading={loading} error={error} />
 
-        <SportGameRail order={order} gamesBySport={gamesBySport} onSelectSport={onSelectSport} loading={loading} />
+        <SportGameRail order={order} gamesBySport={gamesBySport} loadingSports={loadingSports} onSelectSport={onSelectSport} />
 
         <div className="sport-grid" aria-label="Choose a sport">
           {order.map((key, i) => (
@@ -120,7 +120,7 @@ export default function HomePage({ onSelectSport }) {
               key={key}
               sportKey={key}
               sport={SPORTS[key]}
-              headline={loading ? null : formatHeadline(selectFeatured(gamesBySport[key]))}
+              headline={loadingSports.has(key) ? null : formatHeadline(selectFeatured(gamesBySport[key]))}
               index={i}
               count={order.length}
               reordering={reordering}
