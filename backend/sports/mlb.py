@@ -9,8 +9,8 @@ LEAGUES = {
 }
 
 
-def fetch_matches(league: str = "mlb") -> dict:
-    return mlb_provider.matches(LEAGUES[league]["code"])
+def fetch_matches(league: str = "mlb", scope: str = "all") -> dict:
+    return mlb_provider.matches(LEAGUES[league]["code"], scope=scope)
 
 
 def fetch_standings(league: str = "mlb") -> dict:

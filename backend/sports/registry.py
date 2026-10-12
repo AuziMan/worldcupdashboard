@@ -19,8 +19,8 @@ def known_league(league: str) -> bool:
     return league in LEAGUE_MODULE
 
 
-def fetch_matches(league: str) -> dict:
-    return LEAGUE_MODULE[league].fetch_matches(league)
+def fetch_matches(league: str, scope: str = "all") -> dict:
+    return LEAGUE_MODULE[league].fetch_matches(league, scope)
 
 
 def fetch_standings(league: str) -> dict:

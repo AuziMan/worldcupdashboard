@@ -13,8 +13,8 @@ LEAGUES = {
 }
 
 
-def fetch_matches(league: str = "ufc") -> dict:
-    return ufc_provider.matches()
+def fetch_matches(league: str = "ufc", scope: str = "all") -> dict:
+    return ufc_provider.matches(scope=scope)
 
 
 def fetch_standings(league: str = "ufc") -> dict:

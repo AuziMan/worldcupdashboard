@@ -89,10 +89,23 @@ def _period(linescore: dict) -> str | None:
     return f"{label} {ordinal}" if label else ordinal
 
 
-def matches(sport_id: str) -> dict:
+def _date_bounds(scope: str, now: datetime) -> tuple[str, str]:
+    """"today"/"future" narrow the ±45-day window to a cheaper-to-render
+    payload for the homepage's live rail (see providers/espn.py's
+    _day_offsets() docstring for why there's no "past" scope — nothing on
+    the homepage renders it). Unlike ESPN/UFC, this is one request either
+    way, so it's purely about response size, not request count."""
+    if scope == "today":
+        d = now.strftime("%Y-%m-%d")
+        return d, d
+    if scope == "future":
+        return (now + timedelta(days=1)).strftime("%Y-%m-%d"), (now + timedelta(days=45)).strftime("%Y-%m-%d")
+    return (now - timedelta(days=45)).strftime("%Y-%m-%d"), (now + timedelta(days=45)).strftime("%Y-%m-%d")
+
+
+def matches(sport_id: str, scope: str = "all") -> dict:
     now = datetime.now(timezone.utc)
-    start = (now - timedelta(days=45)).strftime("%Y-%m-%d")
-    end = (now + timedelta(days=45)).strftime("%Y-%m-%d")
+    start, end = _date_bounds(scope, now)
     data = _get(f"/schedule?sportId={sport_id}&startDate={start}&endDate={end}&hydrate=linescore")
     team_lookup = _team_lookup(sport_id)
 

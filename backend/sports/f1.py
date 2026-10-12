@@ -16,8 +16,8 @@ LEAGUES = {
 }
 
 
-def fetch_matches(league: str = "f1") -> dict:
-    return openf1_provider.matches()
+def fetch_matches(league: str = "f1", scope: str = "all") -> dict:
+    return openf1_provider.matches(scope=scope)
 
 
 def fetch_standings(league: str = "f1") -> dict:

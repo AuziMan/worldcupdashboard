@@ -15,8 +15,8 @@ LEAGUES = {
 }
 
 
-def fetch_matches(league: str = "ncaaf") -> dict:
-    return espn.college_football_matches()
+def fetch_matches(league: str = "ncaaf", scope: str = "all") -> dict:
+    return espn.college_football_matches(scope=scope)
 
 
 def fetch_standings(league: str = "ncaaf") -> dict:
