@@ -21,7 +21,7 @@ function RailCard({ game, onSelectSport }) {
 // to tile order) only until the user picks a bubble themselves — once
 // chosen, that pick is pinned for the session so the panel doesn't jump
 // away mid-read if that sport's game ends.
-export default function SportGameRail({ order, gamesBySport, onSelectSport, loading }) {
+export default function SportGameRail({ order, gamesBySport, loadingSports, onSelectSport }) {
   const [activeSport, setActiveSport] = useState(null)
   const effectiveSport = activeSport ?? firstLiveOrFirst(order, gamesBySport)
   const games = selectRailGames(gamesBySport[effectiveSport] || [])
@@ -29,7 +29,7 @@ export default function SportGameRail({ order, gamesBySport, onSelectSport, load
   return (
     <div className="sport-rail">
       <div className="sport-rail-cards">
-        {loading ? (
+        {loadingSports.has(effectiveSport) ? (
           <span className="sport-rail-message">Loading live games&hellip;</span>
         ) : games.length > 0 ? (
           games.map(game => <RailCard key={game.id} game={game} onSelectSport={onSelectSport} />)
