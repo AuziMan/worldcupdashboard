@@ -85,7 +85,20 @@ def _scoreboard_day(date_str: str) -> list:
     return data.get("events", [])
 
 
-def matches() -> dict:
+def _day_offsets(scope: str):
+    """Same narrowing as providers/espn.py's _day_offsets() — "today" needs
+    just 1 of the 226 per-day requests below, "future" the 180 ahead of it.
+    No "past" scope: the homepage's live rail (the only caller that scopes
+    this at all) never renders past fights, see providers/espn.py's
+    _day_offsets() docstring; everyone else keeps using "all"."""
+    if scope == "today":
+        return range(0, 1)
+    if scope == "future":
+        return range(1, 181)
+    return range(-45, 181)
+
+
+def matches(scope: str = "all") -> dict:
     now = datetime.now(timezone.utc)
 
     # ESPN's MMA scoreboard now 500s on a dates=start-end range covering
@@ -103,7 +116,7 @@ def matches() -> dict:
     # in case of any boundary overlap.
     date_strs = [
         (now + timedelta(days=offset)).strftime("%Y%m%d")
-        for offset in range(-45, 181)
+        for offset in _day_offsets(scope)
     ]
     events_by_comp_id = {}
     with concurrent.futures.ThreadPoolExecutor(max_workers=10) as pool:

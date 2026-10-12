@@ -33,29 +33,45 @@ async function fetchJSON(path) {
   return res.json()
 }
 
+// Fetches one league's matches for one time slice ("today" or "future" —
+// see routes/leagues.py's `range` param) and adapts them into our common
+// Game shape in one step.
+function fetchScope(league, adapt, scope) {
+  return fetchJSON(`/api/${league}/matches?range=${scope}`).then(data => data.matches.map(adapt))
+}
+
 function emptyGamesByLeague() {
-  const bySport = {}
-  LEAGUES.forEach(({ league }) => { bySport[league] = [] })
-  return bySport
+  const state = {}
+  LEAGUES.forEach(({ league }) => { state[league] = { today: [], future: [] } })
+  return state
 }
 
 function deriveGamesBySport(gamesByLeague) {
   const bySport = {}
   Object.keys(SPORTS).forEach(key => { bySport[key] = [] })
   LEAGUES.forEach(({ league, sportKey }) => {
-    bySport[sportKey] = bySport[sportKey].concat(gamesByLeague[league])
+    const { today, future } = gamesByLeague[league]
+    bySport[sportKey] = bySport[sportKey].concat(today, future)
   })
   return bySport
 }
 
-// Fans out across all 7 sport tiles at once, but — unlike useLeagueData's
-// single-league all-or-nothing load — each league's games land in state as
-// soon as THAT league's own request resolves, instead of waiting for every
-// one of the 8 to settle. A couple of upstream providers (UFC's scoreboard
-// scrape, NCAAF's wide day-by-day window) are reliably the slowest of the
-// bunch; gating the whole homepage on them would mean nothing renders until
-// the slowest provider answers. Fast leagues show up first; slower ones
-// fill in afterward without blocking anything else.
+// Fans out across all 8 sport tiles at once, but each league loads in two
+// waves instead of one: "today" first (live games plus anything else on
+// today's date — the one slice that can make the page feel instant, since
+// it's a single upstream request even for the ESPN/UFC providers that
+// otherwise have to fan out across 91–226 days, see providers/espn.py's
+// _day_offsets()), then "future" fills in quietly right after, per league,
+// once that league's own "today" fetch has landed. There's no "past" wave:
+// lib/liveFeed.js's selectFeatured/selectWheelGames/selectRailGames only
+// ever look at live-or-upcoming games, so fetching finished games here
+// would just be wasted work — the dashboards' own Past tab still gets the
+// full history from the unscoped endpoint.
+//
+// Unlike useLeagueData's single-league all-or-nothing load, each league's
+// "today" games land in state as soon as THAT league's own request
+// resolves, instead of waiting for every one of the 8 to settle — a slow
+// provider fills in afterward without blocking the fast ones.
 function emptySettledLeagues() {
   const settled = {}
   LEAGUES.forEach(({ league }) => { settled[league] = false })
@@ -70,26 +86,37 @@ export function useLiveFeed() {
   const [lastFetched, setLastFetched] = useState(null)
 
   const load = useCallback(() => {
-    let settledCount = 0
+    let todaySettledCount = 0
     let anySucceeded = false
 
     LEAGUES.forEach(({ league, adapt }) => {
-      fetchJSON(`/api/${league}/matches`)
-        .then(data => {
+      fetchScope(league, adapt, 'today')
+        .then(games => {
           anySucceeded = true
-          setGamesByLeague(prev => ({ ...prev, [league]: data.matches.map(adapt) }))
+          setGamesByLeague(prev => ({ ...prev, [league]: { ...prev[league], today: games } }))
         })
         .catch(err => {
-          console.warn(`useLiveFeed: ${league} matches failed`, err)
+          console.warn(`useLiveFeed: ${league} today matches failed`, err)
         })
         .finally(() => {
-          settledCount += 1
+          todaySettledCount += 1
           setSettledLeagues(prev => ({ ...prev, [league]: true }))
-          setLoading(false) // flips false on the first league to land, not the last
-          if (settledCount === LEAGUES.length) {
+          setLoading(false) // flips false on the first league's "today" to land, not the last
+          if (todaySettledCount === LEAGUES.length) {
             setLastFetched(new Date())
             setError(anySucceeded ? null : 'Live data unavailable')
           }
+
+          // Only starts once this league's "today" has resolved (success or
+          // not) — never gates loading/settled, so a slow "future" fetch
+          // can't hold up anything the first frame needs.
+          fetchScope(league, adapt, 'future')
+            .then(games => {
+              setGamesByLeague(prev => ({ ...prev, [league]: { ...prev[league], future: games } }))
+            })
+            .catch(err => {
+              console.warn(`useLiveFeed: ${league} future matches failed`, err)
+            })
         })
     })
   }, [])
@@ -106,15 +133,19 @@ export function useLiveFeed() {
   }, [load])
 
   const games = useMemo(
-    () => LEAGUES.flatMap(({ league }) => gamesByLeague[league]),
+    () => LEAGUES.flatMap(({ league }) => {
+      const { today, future } = gamesByLeague[league]
+      return [...today, ...future]
+    }),
     [gamesByLeague]
   )
   const gamesBySport = useMemo(() => deriveGamesBySport(gamesByLeague), [gamesByLeague])
 
   // A sport counts as "still loading" until every league feeding it (soccer
-  // is two: epl + mls) has settled — otherwise a slow league with a real
-  // live game would flash "No games today" the moment a faster, unrelated
-  // league finishes first and flips the shared `loading` flag off.
+  // is two: epl + mls) has settled its "today" wave — otherwise a slow
+  // league with a real live game would flash "No games today" the moment a
+  // faster, unrelated league finishes first and flips the shared `loading`
+  // flag off.
   const loadingSports = useMemo(() => {
     const pending = new Set()
     Object.keys(SPORTS).forEach(sportKey => {

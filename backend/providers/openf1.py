@@ -65,7 +65,7 @@ def _status(session: dict) -> str:
     return "IN_PLAY"
 
 
-def matches() -> dict:
+def matches(scope: str = "all") -> dict:
     year = datetime.now(timezone.utc).year
     meetings = _get("/meetings", year=year)
     meetings_by_key = {
@@ -95,6 +95,19 @@ def matches() -> dict:
         })
 
     results.sort(key=lambda m: m["utcDate"] or "")
+
+    # Unlike ESPN/UFC/MLB, the whole season comes from 2 calls regardless of
+    # scope, so "today"/"future" are just a post-fetch filter here — no
+    # request-count win, just a smaller payload, kept for the same reason
+    # (see providers/espn.py's _day_offsets() docstring): the homepage's live
+    # rail never renders past sessions, so there's no "past" scope.
+    if scope in ("today", "future"):
+        today = datetime.now(timezone.utc).date()
+        def in_scope(m):
+            d = datetime.fromisoformat(m["utcDate"]).date()
+            return d == today if scope == "today" else d > today
+        results = [m for m in results if m["utcDate"] and in_scope(m)]
+
     return {"matches": results}
 
 

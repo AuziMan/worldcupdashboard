@@ -19,9 +19,9 @@ LEAGUES = {
 }
 
 
-def fetch_matches(league: str = "nfl") -> dict:
+def fetch_matches(league: str = "nfl", scope: str = "all") -> dict:
     cfg = LEAGUES[league]
-    return espn.matches(cfg["sport"], cfg["code"])
+    return espn.matches(cfg["sport"], cfg["code"], scope=scope)
 
 
 def fetch_standings(league: str = "nfl") -> dict:

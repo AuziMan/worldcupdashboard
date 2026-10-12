@@ -119,7 +119,23 @@ def _scoreboard_day(base: str, code: str, date_str: str) -> list:
     return data.get("events", [])
 
 
-def matches(sport: str, code: str) -> dict:
+def _day_offsets(scope: str):
+    """`scope` narrows the ±45-day window matches() would otherwise fetch
+    one-request-per-day (see below): "today" needs just 1 of those 91
+    requests, "future" needs 45. Used by the homepage's live rail, which
+    only ever renders live/upcoming games (lib/liveFeed.js's selectFeatured/
+    selectWheelGames/selectRailGames) and has no use for the "past" half of
+    the window — so there's no "past" scope here; callers that need the full
+    history (BracketView, MatchSection's Past tab, standings) keep using the
+    default "all", unchanged."""
+    if scope == "today":
+        return range(0, 1)
+    if scope == "future":
+        return range(1, 46)
+    return range(-45, 46)
+
+
+def matches(sport: str, code: str, scope: str = "all") -> dict:
     cfg = ESPN_SPORTS[sport]
     now = datetime.now(timezone.utc)
     # The scoreboard endpoint used to take one `dates=start-end` range query
@@ -140,7 +156,7 @@ def matches(sport: str, code: str) -> dict:
     # off entirely here.
     date_strs = [
         (now + timedelta(days=offset)).strftime("%Y%m%d")
-        for offset in range(-45, 46)
+        for offset in _day_offsets(scope)
     ]
     # max_workers is deliberately modest (not e.g. 16): Render's free tier has
     # very little CPU, and this pool's threads compete with gunicorn's own
@@ -400,13 +416,13 @@ def college_football_teams() -> dict:
     return {"teams": sorted(seen.values(), key=lambda t: t.get("name") or "")}
 
 
-def college_football_matches() -> dict:
+def college_football_matches(scope: str = "all") -> dict:
     """Adds each team's current AP Top 25 rank on top of the generic
     matches() shape above — the same enrichment college_football_standings()
     and college_football_teams() do, extended to the scoreboard. Lives here
     rather than in matches() itself since no other sport it's shared with
     (soccer/basketball/NFL) has a comparable national ranking to attach."""
-    data = matches("football", "college-football")
+    data = matches("football", "college-football", scope=scope)
     ap_ranks = _college_football_ap_ranks()
     if ap_ranks:
         for event in data["matches"]:
