@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import { loadMatchesStaged, upsertMatches, FULL_STAGES, POLL_STAGES } from '@/lib/stagedMatches'
 
 const INTERVAL_DEFAULT = 60 * 1000  // 60 seconds
 const INTERVAL_LIVE = 60 * 1000    // 60 seconds during live games
@@ -57,29 +58,58 @@ export function useLeagueData(league) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [lastFetched, setLastFetched] = useState(null)
-  const [isLiveMode, setIsLiveMode] = useState(false)
   const intervalRef = useRef(null)
+  // Bumped on every league switch so a staged load for the old league that's
+  // still in flight can't write into the new league's state.
+  const epochRef = useRef(0)
+  const inFlightRef = useRef(false)
+  // False until a load has fetched every stage; polls only refresh
+  // today/soon, so an incomplete load is retried in full on the next poll.
+  const fullyLoadedRef = useRef(false)
 
   const load = useCallback(async (showLoading = false) => {
+    if (inFlightRef.current && !showLoading) return
+    const epoch = epochRef.current
+    const isCurrent = () => epoch === epochRef.current
+    inFlightRef.current = true
     if (showLoading) setLoading(true)
     setError(null)
+
+    // Standings/status are independent of matches: they land whenever they
+    // land instead of holding up the first paint of today's games.
+    Promise.all([fetchJSON(`/api/${league}/standings`), fetchJSON('/api/status')])
+      .then(([standingData, statusData]) => {
+        if (!isCurrent()) return
+        setStandings(standingData)
+        setStatus(statusData)
+      })
+      .catch(err => { if (isCurrent()) setError(err.message) })
+
     try {
-      const [matchData, standingData, statusData] = await Promise.all([
-        fetchJSON(`/api/${league}/matches`),
-        fetchJSON(`/api/${league}/standings`),
-        fetchJSON('/api/status'),
-      ])
-      setMatches(prev => mergeMatches(prev, matchData))
-      setStandings(standingData)
-      setStatus(statusData)
-      setLastFetched(new Date())
-      setIsLiveMode(hasLiveMatches(matchData))
+      const full = showLoading || !fullyLoadedRef.current
+      const complete = await loadMatchesStaged(
+        fetchJSON,
+        league,
+        data => {
+          if (!isCurrent()) return
+          setMatches(prev => mergeMatches(prev, upsertMatches(prev, data)))
+          setLastFetched(new Date())
+          setLoading(false)
+        },
+        full ? FULL_STAGES : POLL_STAGES
+      )
+      if (full && isCurrent()) fullyLoadedRef.current = complete
     } catch (err) {
-      setError(err.message)
+      if (isCurrent()) setError(err.message)
     } finally {
-      if (showLoading) setLoading(false)
+      if (isCurrent()) {
+        inFlightRef.current = false
+        setLoading(false)
+      }
     }
   }, [league])
+
+  const isLiveMode = useMemo(() => hasLiveMatches(matches), [matches])
 
   // Restart interval whenever live mode changes so cadence updates immediately
   useEffect(() => {
@@ -93,9 +123,11 @@ export function useLeagueData(league) {
 
   // Switching leagues: drop stale data and refetch with the loading spinner
   useEffect(() => {
+    epochRef.current += 1
+    inFlightRef.current = false
+    fullyLoadedRef.current = false
     setMatches(null)
     setStandings(null)
-    setIsLiveMode(false)
     load(true)
   }, [league, load])
 

@@ -6,19 +6,16 @@ the right provider happens in sports/registry.py.
 from flask import Blueprint, jsonify, request
 
 from cache import cached
+from scopes import VALID_RANGES
 from sports import registry
 
 bp = Blueprint("leagues", __name__)
 
-# "today"/"future" let a caller ask for a slice of the full window instead of
-# everything at once — the homepage's live rail (hooks/useLiveFeed.js) uses
-# this to paint today's/live games almost immediately instead of waiting on
-# the full ±45-day (or, for ESPN/UFC, ±45/+180-day) fetch every dashboard
-# page still gets via the unscoped default. No "past": nothing on the
-# homepage renders it (see providers/espn.py's _day_offsets() docstring), so
-# every other caller (BracketView, MatchSection's Past tab, standings) just
-# keeps requesting the unscoped "all" this always returned.
-VALID_RANGES = {"today", "future"}
+# `range` lets a caller ask for a slice of the full window instead of
+# everything at once, so dashboards (hooks/useLeagueData.js etc.) and the
+# homepage (hooks/useLiveFeed.js) can paint today's games first, then the
+# next two days, then the rest. See scopes.py for what each slice covers;
+# the unscoped default is still the whole window.
 
 
 @bp.route("/api/<league>/matches")

@@ -22,6 +22,8 @@ from datetime import datetime, timedelta, timezone
 
 import requests
 
+from scopes import day_bounds
+
 ESPN_SPORTS = {
     "soccer": {
         "base": "https://site.api.espn.com/apis/site/v2/sports/soccer",
@@ -121,18 +123,10 @@ def _scoreboard_day(base: str, code: str, date_str: str) -> list:
 
 def _day_offsets(scope: str):
     """`scope` narrows the ±45-day window matches() would otherwise fetch
-    one-request-per-day (see below): "today" needs just 1 of those 91
-    requests, "future" needs 45. Used by the homepage's live rail, which
-    only ever renders live/upcoming games (lib/liveFeed.js's selectFeatured/
-    selectWheelGames/selectRailGames) and has no use for the "past" half of
-    the window — so there's no "past" scope here; callers that need the full
-    history (BracketView, MatchSection's Past tab, standings) keep using the
-    default "all", unchanged."""
-    if scope == "today":
-        return range(0, 1)
-    if scope == "future":
-        return range(1, 46)
-    return range(-45, 46)
+    one-request-per-day (see below) — "today" needs just 1 of those 91
+    requests, "soon" 2, and so on; see scopes.py for the slice definitions."""
+    first, last = day_bounds(scope, past=45, future=45)
+    return range(first, last + 1)
 
 
 def matches(sport: str, code: str, scope: str = "all") -> dict:

@@ -7,6 +7,7 @@ from datetime import datetime, timedelta, timezone
 import requests
 
 from config import API_KEY, FOOTBALL_DATA_BASE_URL
+from scopes import day_bounds
 
 
 def _headers():
@@ -20,24 +21,24 @@ def _get(path: str, params: dict | None = None) -> dict:
 
 
 # Unlike the ESPN/UFC providers, this API takes one request regardless of
-# window width, so "scope" here is just about trimming the response payload,
-# not request count. The unscoped default stays exactly what it's always
-# been — the whole competition's matches, no date filter at all — since
-# every existing caller (BracketView, MatchSection's Past tab, standings)
-# relies on that full season being there. "today"/"future" are new, used
-# only by the homepage's live rail (see providers/espn.py's _day_offsets()
-# docstring for why there's no "past" scope); bounded to the same ±45-day
-# window the ESPN/MLB providers use, rather than left open-ended, so a
-# mid-season "future" request doesn't pull the rest of the season.
+# window width, so "scope" here is just about trimming the response payload
+# (and so the first paint), not request count. The unscoped default stays
+# exactly what it's always been — the whole competition's matches, no date
+# filter at all — and the scoped slices are bounded to a year either side,
+# so that today + soon + later + past together still cover a full season
+# (BracketView, MatchSection's Past tab and standings rely on all of it).
+SEASON_DAYS = 366
+
+
 def matches(code: str, scope: str = "all") -> dict:
     if scope == "all":
         return _get(f"/competitions/{code}/matches")
+    first, last = day_bounds(scope, past=SEASON_DAYS, future=SEASON_DAYS)
     today = datetime.now(timezone.utc).date()
-    if scope == "today":
-        date_from = date_to = today
-    else:  # "future"
-        date_from, date_to = today + timedelta(days=1), today + timedelta(days=45)
-    params = {"dateFrom": date_from.isoformat(), "dateTo": date_to.isoformat()}
+    params = {
+        "dateFrom": (today + timedelta(days=first)).isoformat(),
+        "dateTo": (today + timedelta(days=last)).isoformat(),
+    }
     return _get(f"/competitions/{code}/matches", params=params)
 
 

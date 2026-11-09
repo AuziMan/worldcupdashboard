@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { SPORTS } from '@/lib/sports'
 import { adaptStandardMatch, adaptUfcFight, adaptF1Session } from '@/lib/liveFeed'
 
@@ -33,8 +33,8 @@ async function fetchJSON(path) {
   return res.json()
 }
 
-// Fetches one league's matches for one time slice ("today" or "future" —
-// see routes/leagues.py's `range` param) and adapts them into our common
+// Fetches one league's matches for one time slice ("today", "soon" or
+// "later" — see backend/scopes.py) and adapts them into our common
 // Game shape in one step.
 function fetchScope(league, adapt, scope) {
   return fetchJSON(`/api/${league}/matches?range=${scope}`).then(data => data.matches.map(adapt))
@@ -42,7 +42,7 @@ function fetchScope(league, adapt, scope) {
 
 function emptyGamesByLeague() {
   const state = {}
-  LEAGUES.forEach(({ league }) => { state[league] = { today: [], future: [] } })
+  LEAGUES.forEach(({ league }) => { state[league] = { today: [], soon: [], later: [] } })
   return state
 }
 
@@ -50,19 +50,20 @@ function deriveGamesBySport(gamesByLeague) {
   const bySport = {}
   Object.keys(SPORTS).forEach(key => { bySport[key] = [] })
   LEAGUES.forEach(({ league, sportKey }) => {
-    const { today, future } = gamesByLeague[league]
-    bySport[sportKey] = bySport[sportKey].concat(today, future)
+    const { today, soon, later } = gamesByLeague[league]
+    bySport[sportKey] = bySport[sportKey].concat(today, soon, later)
   })
   return bySport
 }
 
-// Fans out across all 8 sport tiles at once, but each league loads in two
+// Fans out across all 8 sport tiles at once, but each league loads in three
 // waves instead of one: "today" first (live games plus anything else on
 // today's date — the one slice that can make the page feel instant, since
 // it's a single upstream request even for the ESPN/UFC providers that
 // otherwise have to fan out across 91–226 days, see providers/espn.py's
-// _day_offsets()), then "future" fills in quietly right after, per league,
-// once that league's own "today" fetch has landed. There's no "past" wave:
+// _day_offsets()), then "soon" (the next two days), then "later" (the
+// rest of the window) fill in quietly right after, per league, each once the
+// previous wave for that league has landed. There's no "past" wave:
 // lib/liveFeed.js's selectFeatured/selectWheelGames/selectRailGames only
 // ever look at live-or-upcoming games, so fetching finished games here
 // would just be wasted work — the dashboards' own Past tab still gets the
@@ -84,8 +85,10 @@ export function useLiveFeed() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [lastFetched, setLastFetched] = useState(null)
+  const lastLoadAt = useRef(0)
 
   const load = useCallback(() => {
+    lastLoadAt.current = Date.now()
     let todaySettledCount = 0
     let anySucceeded = false
 
@@ -108,14 +111,23 @@ export function useLiveFeed() {
           }
 
           // Only starts once this league's "today" has resolved (success or
-          // not) — never gates loading/settled, so a slow "future" fetch
-          // can't hold up anything the first frame needs.
-          fetchScope(league, adapt, 'future')
+          // not) — never gates loading/settled, so a slow "soon"/"later"
+          // fetch can't hold up anything the first frame needs.
+          fetchScope(league, adapt, 'soon')
             .then(games => {
-              setGamesByLeague(prev => ({ ...prev, [league]: { ...prev[league], future: games } }))
+              setGamesByLeague(prev => ({ ...prev, [league]: { ...prev[league], soon: games } }))
             })
             .catch(err => {
-              console.warn(`useLiveFeed: ${league} future matches failed`, err)
+              console.warn(`useLiveFeed: ${league} soon matches failed`, err)
+            })
+            .finally(() => {
+              fetchScope(league, adapt, 'later')
+                .then(games => {
+                  setGamesByLeague(prev => ({ ...prev, [league]: { ...prev[league], later: games } }))
+                })
+                .catch(err => {
+                  console.warn(`useLiveFeed: ${league} later matches failed`, err)
+                })
             })
         })
     })
@@ -132,10 +144,22 @@ export function useLiveFeed() {
     return () => clearInterval(interval)
   }, [load])
 
+  // The interval above deliberately idles outside 9am–9pm, so a page left
+  // open (or restored from a background tab) overnight would keep showing
+  // whatever it last fetched — e.g. a game that was live hours ago. Refetch
+  // whenever the tab becomes visible again if the data is a poll-interval old.
+  useEffect(() => {
+    function onVisible() {
+      if (document.visibilityState === 'visible' && Date.now() - lastLoadAt.current >= POLL_INTERVAL) load()
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
+  }, [load])
+
   const games = useMemo(
     () => LEAGUES.flatMap(({ league }) => {
-      const { today, future } = gamesByLeague[league]
-      return [...today, ...future]
+      const { today, soon, later } = gamesByLeague[league]
+      return [...today, ...soon, ...later]
     }),
     [gamesByLeague]
   )

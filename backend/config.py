@@ -26,3 +26,11 @@ FOOTBALL_DATA_BASE_URL = "https://api.football-data.org/v4"
 # (rather than one) so the two cases can be tuned independently later.
 CACHE_TTL_DEFAULT = timedelta(seconds=60)
 CACHE_TTL_LIVE = timedelta(seconds=60)
+
+# Hard ceiling on how old a *matches* entry may be and still be served
+# (stale-while-revalidate, see cache.py). Past this, the request waits for a
+# fresh fetch instead — otherwise an idle backend serves hours-old data
+# (e.g. last night's IN_PLAY game) as if current. The live ceiling is tighter
+# because a stale "live" snapshot is the most misleading kind of stale.
+CACHE_MAX_STALE = timedelta(minutes=10)
+CACHE_MAX_STALE_LIVE = timedelta(minutes=2)
