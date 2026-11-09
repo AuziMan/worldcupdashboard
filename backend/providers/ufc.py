@@ -76,13 +76,13 @@ def _division_label(rtype: str) -> str:
     return " ".join("Women's" if w == "womens" else w.capitalize() for w in rtype.split("-"))
 
 
-def _scoreboard_day(date_str: str) -> list:
+def _scoreboard_day(date_str: str) -> list | None:
     try:
         data = _get(f"/scoreboard?dates={date_str}")
     except requests.exceptions.RequestException:
         # Mirrors providers/espn.py's same per-day resilience: one bad/slow
         # day out of the whole window shouldn't fail the entire fetch.
-        return []
+        return None  # failed day — callers flag the response as partial
     return data.get("events", [])
 
 
@@ -114,8 +114,12 @@ def matches(scope: str = "all") -> dict:
         for offset in _day_offsets(scope)
     ]
     events_by_comp_id = {}
+    partial = False
     with concurrent.futures.ThreadPoolExecutor(max_workers=10) as pool:
         for events in pool.map(_scoreboard_day, date_strs):
+            if events is None:
+                partial = True
+                continue
             for event in events:
                 for comp in event.get("competitions", []):
                     events_by_comp_id[comp.get("id")] = (event, comp)
@@ -149,7 +153,9 @@ def matches(scope: str = "all") -> dict:
             "result": result,
         })
 
-    return {"matches": results}
+    # See providers/espn.py: flags a response with a failed day so cache.py
+    # re-tries it soon.
+    return {"matches": results, "partial": True} if partial else {"matches": results}
 
 
 def standings() -> dict:

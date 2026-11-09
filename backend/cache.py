@@ -19,7 +19,10 @@ from config import (
     CACHE_MAX_STALE,
     CACHE_MAX_STALE_LIVE,
     CACHE_TTL_DEFAULT,
+    CACHE_TTL_LATER,
     CACHE_TTL_LIVE,
+    CACHE_TTL_PARTIAL,
+    CACHE_TTL_PAST,
 )
 
 MAX_ENTRIES = 500
@@ -29,22 +32,30 @@ MAX_ENTRIES = 500
 # has gone longest untouched, not just the oldest-inserted one.
 _cache: OrderedDict = OrderedDict()
 
-# Striped locks (fixed count, not one per key) so concurrent requests for the
-# same cold key serialize onto one fetch instead of each independently
-# calling fetch() — this matters a lot now that gunicorn runs multiple
-# request-handling threads (see render.yaml): without this, several requests
-# landing within the same cache-miss window for e.g. matches_ncaaf each fired
-# off their own 91-request ESPN burst (see providers/espn.py's matches()),
-# which was enough concurrent thread/network load on Render's free tier to
-# starve even unrelated, otherwise-fast endpoints. A fixed stripe count keeps
-# this bounded (unlike a dict keyed per-cache-key, which would grow exactly
-# like the MAX_ENTRIES problem above); two unrelated keys occasionally
-# sharing a stripe just means one waits a beat, not a correctness issue.
+# Locks so concurrent requests for the same cold key serialize onto one fetch
+# instead of each independently calling fetch() — several requests landing in
+# the same cache-miss window for e.g. matches_ncaaf each fired off their own
+# 91-request ESPN burst (see providers/espn.py's matches()), enough
+# concurrent load on Render's free tier to starve unrelated endpoints.
+#
+# Keys drawn from a small fixed universe (league and scope are validated
+# before cached() is called) get their own exact lock. A shared stripe lock
+# for those would let one slow cold fetch (e.g. UFC's 178-request "later"
+# slice) block an unrelated cheap one (NFL's "today") that happened to hash
+# to the same stripe. Everything else — team_<league>_<id>, seeded from a
+# client-supplied path segment with no fixed universe — still uses a fixed
+# stripe count so this can't grow without bound, as with MAX_ENTRIES above.
 _LOCK_STRIPES = 32
 _locks = [threading.Lock() for _ in range(_LOCK_STRIPES)]
+_key_locks: dict = {}
+_key_locks_guard = threading.Lock()
+_BOUNDED_PREFIXES = ("matches_", "standings_", "teams_")
 
 
 def _lock_for(key: str) -> threading.Lock:
+    if key.startswith(_BOUNDED_PREFIXES):
+        with _key_locks_guard:
+            return _key_locks.setdefault(key, threading.Lock())
     return _locks[hash(key) % _LOCK_STRIPES]
 
 
@@ -55,13 +66,27 @@ def _has_live_matches(data: dict) -> bool:
     )
 
 
+def _ttl(key: str, data: dict):
+    """How long an entry stays fresh. Today/soon (and anything live) refresh
+    on the short default; later/past slices barely change, so they get much
+    longer. A partial response (an upstream day failed) is re-tried quickly."""
+    if data.get("partial"):
+        return CACHE_TTL_PARTIAL
+    if key.startswith("matches_"):
+        if _has_live_matches(data):
+            return CACHE_TTL_LIVE
+        if key.endswith("_past"):
+            return CACHE_TTL_PAST
+        if key.endswith("_later"):
+            return CACHE_TTL_LATER
+    return CACHE_TTL_DEFAULT
+
+
 def _fresh(key: str):
     """Returns the cached entry's data if it's still within TTL, else None."""
     now = datetime.now(timezone.utc)
     entry = _cache.get(key)
-    live = key.startswith("matches_") and entry and _has_live_matches(entry["data"])
-    ttl = CACHE_TTL_LIVE if live else CACHE_TTL_DEFAULT
-    if entry and now - entry["ts"] < ttl:
+    if entry and now - entry["ts"] < _ttl(key, entry["data"]):
         _cache.move_to_end(key)
         return entry["data"]
     return None
@@ -69,9 +94,10 @@ def _fresh(key: str):
 
 def _too_stale(key: str, entry: dict) -> bool:
     """True if a matches entry is past the hard staleness ceiling and must
-    not be served even while a background refresh runs. Only matches keys are
-    capped — standings/teams/rosters change slowly and stale is harmless."""
-    if not key.startswith("matches_"):
+    not be served even while a background refresh runs. Only the unscoped/
+    today/soon matches keys are capped — standings/teams/rosters, and the
+    later/past slices, change slowly and stale is harmless."""
+    if not key.startswith("matches_") or key.endswith(("_later", "_past")):
         return False
     ceiling = CACHE_MAX_STALE_LIVE if _has_live_matches(entry["data"]) else CACHE_MAX_STALE
     return datetime.now(timezone.utc) - entry["ts"] > ceiling
@@ -162,9 +188,8 @@ def snapshot() -> dict:
     info = {}
     for key, entry in _cache.items():
         live = key.startswith("matches_") and _has_live_matches(entry["data"])
-        ttl = CACHE_TTL_LIVE if live else CACHE_TTL_DEFAULT
         last = entry["ts"]
-        next_refresh = last + ttl
+        next_refresh = last + _ttl(key, entry["data"])
         info[key] = {
             "last_updated": last.isoformat(),
             "next_update": next_refresh.isoformat(),

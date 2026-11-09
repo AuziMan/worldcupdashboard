@@ -1,0 +1,36 @@
+name: Warm backend cache
+
+# Render redeploys the backend when files under backend/ change on main. Its
+# in-memory cache starts empty, so the first visitor would wait on cold
+# upstream fetches. This waits for the new deploy to go live, then requests
+# every sport's data once (see scripts/warm_cache.py). Run manually any time
+# to re-warm.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - backend/**
+      - scripts/warm_cache.py
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: warm-backend
+  cancel-in-progress: true
+
+jobs:
+  warm:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Warm cache
+        env:
+          API_URL: ${{ secrets.VITE_API_URL }}
+          # A manual run has no deploy to wait for, so it doesn't wait on a commit.
+          COMMIT: ${{ github.event_name == 'push' && github.sha || '' }}
+        run: python3 scripts/warm_cache.py "$API_URL" ${COMMIT:+--commit "$COMMIT"}

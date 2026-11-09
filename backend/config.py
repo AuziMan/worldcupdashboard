@@ -27,6 +27,16 @@ FOOTBALL_DATA_BASE_URL = "https://api.football-data.org/v4"
 CACHE_TTL_DEFAULT = timedelta(seconds=60)
 CACHE_TTL_LIVE = timedelta(seconds=60)
 
+# Slower-moving slices of a league's match window (see scopes.py) refresh far
+# less often than today/soon: finished games essentially never change, and a
+# schedule days out rarely does. Refreshing them every minute was most of the
+# upstream load on Render's free tier (UFC's "later" alone is 178 requests).
+CACHE_TTL_LATER = timedelta(minutes=10)
+CACHE_TTL_PAST = timedelta(minutes=60)
+# A response with a failed upstream day in it (see "partial" in
+# providers/espn.py) is only trusted this long, whatever slice it is.
+CACHE_TTL_PARTIAL = timedelta(seconds=15)
+
 # Hard ceiling on how old a *matches* entry may be and still be served
 # (stale-while-revalidate, see cache.py). Past this, the request waits for a
 # fresh fetch instead — otherwise an idle backend serves hours-old data
