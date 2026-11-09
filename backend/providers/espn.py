@@ -105,7 +105,7 @@ def _quarter_clock(status: dict) -> str | None:
     return f"{label} · {clock}" if clock else label
 
 
-def _scoreboard_day(base: str, code: str, date_str: str) -> list:
+def _scoreboard_day(base: str, code: str, date_str: str) -> list | None:
     # The broken range query this replaced (see matches() below) was observed
     # in production to hang for ~30s from Render's IP before failing, instead
     # of failing fast like it does from other networks — enough to trip
@@ -117,7 +117,7 @@ def _scoreboard_day(base: str, code: str, date_str: str) -> list:
     try:
         data = _get(f"{base}/{code}/scoreboard?dates={date_str}")
     except requests.exceptions.RequestException:
-        return []
+        return None  # failed day — callers flag the response as partial
     return data.get("events", [])
 
 
@@ -164,11 +164,15 @@ def matches(sport: str, code: str, scope: str = "all") -> dict:
     # of which make a slightly bigger burst safer than it was right after the
     # ESPN-range-query breakage, when this was still 16.
     events_by_id = {}
+    partial = False
     with concurrent.futures.ThreadPoolExecutor(max_workers=10) as pool:
         per_day = pool.map(
             lambda d: _scoreboard_day(cfg["base"], code, d), date_strs
         )
         for events in per_day:
+            if events is None:
+                partial = True
+                continue
             for event in events:
                 events_by_id[event.get("id")] = event
 
@@ -214,7 +218,10 @@ def matches(sport: str, code: str, scope: str = "all") -> dict:
             "score": {"fullTime": {"home": score(home), "away": score(away)}},
         })
 
-    return {"matches": results}
+    # A failed day is dropped rather than failing the whole fetch, but the
+    # response is flagged so cache.py re-tries it soon instead of holding the
+    # hole for the slice's full (up to an hour) TTL.
+    return {"matches": results, "partial": True} if partial else {"matches": results}
 
 
 def standings(sport: str, code: str) -> dict:

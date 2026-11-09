@@ -3,6 +3,7 @@
 """
 
 import hmac
+import os
 
 from flask import Blueprint, jsonify, request
 
@@ -15,7 +16,14 @@ bp = Blueprint("meta", __name__)
 
 @bp.route("/api/status")
 def status():
-    return jsonify({"cache": cache.snapshot(), "api_key_configured": bool(API_KEY)})
+    return jsonify({
+        "cache": cache.snapshot(),
+        "api_key_configured": bool(API_KEY),
+        # Render sets this to the git SHA being served, which lets
+        # scripts/warm_cache.py tell the freshly deployed instance from the
+        # one it's replacing. None when running anywhere else (local dev).
+        "commit": os.environ.get("RENDER_GIT_COMMIT"),
+    })
 
 
 @bp.route("/api/refresh", methods=["POST"])
