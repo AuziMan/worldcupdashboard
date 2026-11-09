@@ -15,6 +15,7 @@ from datetime import datetime, timedelta, timezone
 import requests
 
 from providers.espn import STATUS_MAP
+from scopes import day_bounds
 
 ESPN_UFC_BASE_URL = "https://site.api.espn.com/apis/site/v2/sports/mma/ufc"
 ESPN_UFC_HEADSHOT_BASE_URL = "https://a.espncdn.com/i/headshots/mma/players/full"
@@ -86,16 +87,10 @@ def _scoreboard_day(date_str: str) -> list:
 
 
 def _day_offsets(scope: str):
-    """Same narrowing as providers/espn.py's _day_offsets() — "today" needs
-    just 1 of the 226 per-day requests below, "future" the 180 ahead of it.
-    No "past" scope: the homepage's live rail (the only caller that scopes
-    this at all) never renders past fights, see providers/espn.py's
-    _day_offsets() docstring; everyone else keeps using "all"."""
-    if scope == "today":
-        return range(0, 1)
-    if scope == "future":
-        return range(1, 181)
-    return range(-45, 181)
+    """Same narrowing as providers/espn.py's _day_offsets(), over this
+    provider's -45/+180-day window (226 per-day requests unscoped)."""
+    first, last = day_bounds(scope, past=45, future=180)
+    return range(first, last + 1)
 
 
 def matches(scope: str = "all") -> dict:

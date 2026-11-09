@@ -15,7 +15,12 @@ import threading
 from collections import OrderedDict
 from datetime import datetime, timezone
 
-from config import CACHE_TTL_DEFAULT, CACHE_TTL_LIVE
+from config import (
+    CACHE_MAX_STALE,
+    CACHE_MAX_STALE_LIVE,
+    CACHE_TTL_DEFAULT,
+    CACHE_TTL_LIVE,
+)
 
 MAX_ENTRIES = 500
 
@@ -62,6 +67,16 @@ def _fresh(key: str):
     return None
 
 
+def _too_stale(key: str, entry: dict) -> bool:
+    """True if a matches entry is past the hard staleness ceiling and must
+    not be served even while a background refresh runs. Only matches keys are
+    capped — standings/teams/rosters change slowly and stale is harmless."""
+    if not key.startswith("matches_"):
+        return False
+    ceiling = CACHE_MAX_STALE_LIVE if _has_live_matches(entry["data"]) else CACHE_MAX_STALE
+    return datetime.now(timezone.utc) - entry["ts"] > ceiling
+
+
 def _store(key: str, data) -> None:
     _cache[key] = {"data": data, "ts": datetime.now(timezone.utc)}
     _cache.move_to_end(key)
@@ -96,7 +111,7 @@ def cached(key: str, fetch):
         return data
 
     entry = _cache.get(key)
-    if entry is not None:
+    if entry is not None and not _too_stale(key, entry):
         # Stale, but something to serve: hand back the old data immediately
         # and refresh in the background instead of making this request (and
         # every other one that lands before the refresh finishes) block on a
@@ -116,14 +131,23 @@ def cached(key: str, fetch):
             ).start()
         return entry["data"]
 
-    # Truly cold — nothing cached yet, so this one request has to wait.
+    # Truly cold (or past the staleness ceiling) — nothing safe to serve, so
+    # this one request has to wait.
     with _lock_for(key):
         # Re-check after acquiring the lock — another thread may have already
         # populated this key while this one was waiting on it.
         data = _fresh(key)
         if data is not None:
             return data
-        data = fetch()
+        try:
+            data = fetch()
+        except Exception:
+            # Upstream failed. An over-ceiling entry with no live games is
+            # still better than an error; one claiming a live game is not.
+            stale = _cache.get(key)
+            if stale is not None and not _has_live_matches(stale["data"]):
+                return stale["data"]
+            raise
         _store(key, data)
         return data
 

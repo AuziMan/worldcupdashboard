@@ -66,7 +66,7 @@ function SportTile({ sportKey, sport, headline, index, count, reordering, onSele
       )}
       <img src={sport.logo} alt={`${sport.label} logo`} />
       <span className="sport-tile-name">{sport.label}</span>
-      <span className="sport-tile-status">{headline || sport.detail}</span>
+      <span className="sport-tile-status">{headline || (comingSoon ? sport.detail : 'Loading…')}</span>
     </div>
   )
 

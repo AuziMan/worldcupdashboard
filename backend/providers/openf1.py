@@ -37,6 +37,8 @@ from datetime import datetime, timedelta, timezone
 
 import requests
 
+from scopes import day_bounds
+
 OPENF1_BASE_URL = "https://api.openf1.org/v1"
 
 
@@ -97,15 +99,15 @@ def matches(scope: str = "all") -> dict:
     results.sort(key=lambda m: m["utcDate"] or "")
 
     # Unlike ESPN/UFC/MLB, the whole season comes from 2 calls regardless of
-    # scope, so "today"/"future" are just a post-fetch filter here — no
-    # request-count win, just a smaller payload, kept for the same reason
-    # (see providers/espn.py's _day_offsets() docstring): the homepage's live
-    # rail never renders past sessions, so there's no "past" scope.
-    if scope in ("today", "future"):
+    # scope, so every slice is just a post-fetch filter here — no
+    # request-count win, just a smaller payload. Unbounded either side: the
+    # window is "this calendar year", not a fixed number of days.
+    if scope != "all":
         today = datetime.now(timezone.utc).date()
+        first, last = day_bounds(scope, past=10**4, future=10**4)
         def in_scope(m):
-            d = datetime.fromisoformat(m["utcDate"]).date()
-            return d == today if scope == "today" else d > today
+            delta = (datetime.fromisoformat(m["utcDate"]).date() - today).days
+            return first <= delta <= last
         results = [m for m in results if m["utcDate"] and in_scope(m)]
 
     return {"matches": results}

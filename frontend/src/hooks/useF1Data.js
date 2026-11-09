@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import { loadMatchesStaged, upsertMatches, FULL_STAGES, POLL_STAGES } from '@/lib/stagedMatches'
 
 const INTERVAL_DEFAULT = 60 * 1000
 const INTERVAL_LIVE = 60 * 1000
@@ -44,27 +45,46 @@ export function useF1Data() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [lastFetched, setLastFetched] = useState(null)
-  const [isLiveMode, setIsLiveMode] = useState(false)
   const intervalRef = useRef(null)
+  const inFlightRef = useRef(false)
+  // False until a load has fetched every stage; polls only refresh
+  // today/soon, so an incomplete load is retried in full on the next poll.
+  const fullyLoadedRef = useRef(false)
 
   const load = useCallback(async (showLoading = false) => {
+    if (inFlightRef.current && !showLoading) return
+    inFlightRef.current = true
     if (showLoading) setLoading(true)
     setError(null)
+
+    // Standings land independently so they never hold up the first paint of
+    // today's games.
+    fetchJSON('/api/f1/standings')
+      .then(setStandings)
+      .catch(err => setError(err.message))
+
     try {
-      const [matchData, standingData] = await Promise.all([
-        fetchJSON('/api/f1/matches'),
-        fetchJSON('/api/f1/standings'),
-      ])
-      setMatches(prev => mergeSessions(prev, matchData))
-      setStandings(standingData)
-      setLastFetched(new Date())
-      setIsLiveMode(hasLiveSessions(matchData))
+      const full = showLoading || !fullyLoadedRef.current
+      const complete = await loadMatchesStaged(
+        fetchJSON,
+        'f1',
+        data => {
+          setMatches(prev => mergeSessions(prev, upsertMatches(prev, data)))
+          setLastFetched(new Date())
+          setLoading(false)
+        },
+        full ? FULL_STAGES : POLL_STAGES
+      )
+      if (full) fullyLoadedRef.current = complete
     } catch (err) {
       setError(err.message)
     } finally {
-      if (showLoading) setLoading(false)
+      inFlightRef.current = false
+      setLoading(false)
     }
   }, [])
+
+  const isLiveMode = useMemo(() => hasLiveSessions(matches), [matches])
 
   useEffect(() => {
     if (intervalRef.current) clearInterval(intervalRef.current)

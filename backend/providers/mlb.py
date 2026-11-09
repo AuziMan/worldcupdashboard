@@ -9,6 +9,8 @@ from datetime import datetime, timedelta, timezone
 
 import requests
 
+from scopes import day_bounds
+
 MLB_STATS_BASE_URL = "https://statsapi.mlb.com/api/v1"
 LOGO_BASE_URL = "https://www.mlbstatic.com/team-logos"
 HEADSHOT_BASE_URL = "https://img.mlbstatic.com/mlb-photos/image/upload/w_213,d_people:generic:headshot:silo:current.png,q_auto:best,f_auto/v1/people"
@@ -90,17 +92,12 @@ def _period(linescore: dict) -> str | None:
 
 
 def _date_bounds(scope: str, now: datetime) -> tuple[str, str]:
-    """"today"/"future" narrow the ±45-day window to a cheaper-to-render
-    payload for the homepage's live rail (see providers/espn.py's
-    _day_offsets() docstring for why there's no "past" scope — nothing on
-    the homepage renders it). Unlike ESPN/UFC, this is one request either
-    way, so it's purely about response size, not request count."""
-    if scope == "today":
-        d = now.strftime("%Y-%m-%d")
-        return d, d
-    if scope == "future":
-        return (now + timedelta(days=1)).strftime("%Y-%m-%d"), (now + timedelta(days=45)).strftime("%Y-%m-%d")
-    return (now - timedelta(days=45)).strftime("%Y-%m-%d"), (now + timedelta(days=45)).strftime("%Y-%m-%d")
+    """Narrows the ±45-day window to one slice (see scopes.py). Unlike
+    ESPN/UFC, this is one request either way, so it's about response size
+    and first paint, not request count."""
+    first, last = day_bounds(scope, past=45, future=45)
+    fmt = "%Y-%m-%d"
+    return (now + timedelta(days=first)).strftime(fmt), (now + timedelta(days=last)).strftime(fmt)
 
 
 def matches(sport_id: str, scope: str = "all") -> dict:

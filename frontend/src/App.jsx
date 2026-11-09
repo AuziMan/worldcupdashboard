@@ -129,6 +129,10 @@ const TAB_ICONS = {
   Races: Flag,
 }
 
+// Tabs that read `standings`, which loads independently of (and usually
+// after) the matches the first paint waits on.
+const STANDINGS_TABS = ['Standings', 'Teams', 'Rankings']
+
 function SoccerDashboard({ onHome }) {
   const [league, setLeague] = useState('epl')
   const [tab, setTab] = useState('Matches')
@@ -193,15 +197,22 @@ function SoccerDashboard({ onHome }) {
           </div>
         )}
 
+        {!loading && !error && !standings && STANDINGS_TABS.includes(tab) && (
+          <div className="loading-state">
+            <div className="spinner" />
+            <p>Loading {activeLeague.name} standings…</p>
+          </div>
+        )}
+
         {!loading && !error && tab === 'Matches' && (
           <MatchSection matches={matches} onSelectMatch={setSelectedMatch} league={league} />
         )}
 
-        {!loading && !error && tab === 'Standings' && (
+        {!loading && !error && standings && tab === 'Standings' && (
           <Standings standings={standings} matches={matches} highlightTop={league === 'wc'} league={league} />
         )}
 
-        {!loading && !error && tab === 'Teams' && (
+        {!loading && !error && standings && tab === 'Teams' && (
           <TeamsView matches={matches} standings={standings} league={league} />
         )}
 
@@ -261,15 +272,22 @@ function SingleSportDashboard({ leagueKey, config, onHome }) {
           </div>
         )}
 
+        {!loading && !error && !standings && STANDINGS_TABS.includes(tab) && (
+          <div className="loading-state">
+            <div className="spinner" />
+            <p>Loading {config.name} standings…</p>
+          </div>
+        )}
+
         {!loading && !error && tab === 'Matches' && (
           <MatchSection matches={matches} onSelectMatch={setSelectedMatch} showProgress={false} league={leagueKey} />
         )}
 
-        {!loading && !error && tab === 'Standings' && (
+        {!loading && !error && standings && tab === 'Standings' && (
           <Standings standings={standings} matches={matches} highlightTop={false} league={leagueKey} />
         )}
 
-        {!loading && !error && tab === 'Teams' && (
+        {!loading && !error && standings && tab === 'Teams' && (
           <TeamsView matches={matches} standings={standings} league={leagueKey} />
         )}
       </main>
@@ -329,11 +347,18 @@ function UfcDashboard({ onHome }) {
           </div>
         )}
 
+        {!loading && !error && !standings && STANDINGS_TABS.includes(tab) && (
+          <div className="loading-state">
+            <div className="spinner" />
+            <p>Loading {UFC_LEAGUE.name} standings…</p>
+          </div>
+        )}
+
         {!loading && !error && tab === 'Events' && (
           <FightSection matches={matches} onSelectMatch={setSelectedFight} />
         )}
 
-        {!loading && !error && tab === 'Rankings' && (
+        {!loading && !error && standings && tab === 'Rankings' && (
           <RankingsView standings={standings} />
         )}
       </main>
@@ -393,11 +418,18 @@ function F1Dashboard({ onHome }) {
           </div>
         )}
 
+        {!loading && !error && !standings && STANDINGS_TABS.includes(tab) && (
+          <div className="loading-state">
+            <div className="spinner" />
+            <p>Loading {F1_LEAGUE.name} standings…</p>
+          </div>
+        )}
+
         {!loading && !error && tab === 'Races' && (
           <RaceSection matches={matches} onSelectMatch={setSelectedRace} />
         )}
 
-        {!loading && !error && tab === 'Standings' && (
+        {!loading && !error && standings && tab === 'Standings' && (
           <F1StandingsView standings={standings} />
         )}
       </main>
